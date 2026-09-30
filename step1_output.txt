@@ -1,0 +1,305 @@
+node_modules/@ductape/sdk/dist/api/services/logsApi.service.d.ts:34:        sessions: number;
+node_modules/@ductape/sdk/dist/api/services/processorApi.service.d.ts:29:        sessions: any[];
+node_modules/@ductape/sdk/dist/api/services/processorApi.service.d.ts:181:            sessions: number;
+node_modules/@ductape/sdk/dist/api/services/processorApi.service.d.ts:500:        sessions: any[];
+node_modules/@ductape/sdk/dist/api/services/processorApi.service.d.ts:651:            sessions: number;
+node_modules/@ductape/sdk/dist/cloud/types/cloud.types.d.ts:11:export type CloudConnectionScope = 'storage' | 'broker' | 'database' | 'graph' | 'vector' | 'cache' | 'notifications';
+node_modules/@ductape/sdk/dist/cloud/types/cloud.types.d.ts:169:export type CloudComponentType = 'storage' | 'messageBrokers' | 'databases' | 'graphs' | 'vectors' | 'caches';
+node_modules/@ductape/sdk/dist/cloud/types/cloud.types.d.ts:230:    /** When false, start cloud create and return immediately (databases only). Default true. */
+node_modules/@ductape/sdk/dist/cloud/vpc-connector-connect.util.d.ts:10: * no longer use this — see databases.service.ts, which instead opens the tunnel centrally and
+node_modules/@ductape/sdk/dist/database/adapters/dynamodb.adapter.d.ts:12: * - Different query patterns than SQL databases
+node_modules/@ductape/sdk/dist/database/adapters/mariadb.adapter.d.ts:4: * Database adapter for MariaDB databases using the 'mysql2' library.
+node_modules/@ductape/sdk/dist/database/adapters/mongodb.adapter.d.ts:4: * Database adapter for MongoDB databases using the 'mongodb' driver.
+node_modules/@ductape/sdk/dist/database/adapters/mysql.adapter.d.ts:4: * Database adapter for MySQL databases using the 'mysql2' library.
+node_modules/@ductape/sdk/dist/database/adapters/postgresql.adapter.d.ts:4: * Database adapter for PostgreSQL databases using the 'pg' library.
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:8: * Supported databases: PostgreSQL, MySQL, MongoDB, DynamoDB, MariaDB, Cassandra
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:62: * Provides unified ORM interface for all supported databases
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:135:     * Fetch all databases for a product
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:277:     * const db = await ductape.databases.connect({ env: 'dev', product: 'my-app', database: 'users-db' });
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:322:     * Fetch all registered databases
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:325:     * const databases = await ductape.database.fetchAll();
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:326:     * databases.forEach((db) => {
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1019:         * await ductape.databases.action.dispatch({
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1029:         * await ductape.databases.action.dispatch({
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1064:     * await ductape.databases.dispatch({
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1074:     * await ductape.databases.dispatch({
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1171:         * Add a constraint (SQL databases only)
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1175:         * Drop a constraint (SQL databases only)
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1285:     * const dashboard = await databases.fetchDashboard({
+node_modules/@ductape/sdk/dist/database/databases.service.d.ts:1324:            sessions: number;
+node_modules/@ductape/sdk/dist/database/index.d.ts:14:export { DatabaseService, databaseService, IDatabaseServiceConfig, IDatabaseSchemaSnapshot, DatabaseConnection, } from './databases.service';
+node_modules/@ductape/sdk/dist/database/schema/schema-manager.d.ts:130:     * Add a constraint (SQL databases only)
+node_modules/@ductape/sdk/dist/database/schema/schema-manager.d.ts:134:     * Drop a constraint (SQL databases only)
+node_modules/@ductape/sdk/dist/database/types/connection.interface.d.ts:26:    /** Master password for cloud-provisioned databases (used at provision time only, not stored) */
+node_modules/@ductape/sdk/dist/database/types/dashboard.interface.d.ts:55:        sessions: number;
+node_modules/@ductape/sdk/dist/database/types/enums.d.ts:17: * Column data types supported across databases
+node_modules/@ductape/sdk/dist/database/types/enums.d.ts:71: * Index types supported by various databases
+node_modules/@ductape/sdk/dist/database/types/migration.interface.d.ts:4: * Platform-independent migrations that work across SQL and NoSQL databases.
+node_modules/@ductape/sdk/dist/database/types/migration.interface.d.ts:12: * Platform-independent - works across all supported databases
+node_modules/@ductape/sdk/dist/database/types/migration.interface.d.ts:32: * Unified across SQL and NoSQL databases
+node_modules/@ductape/sdk/dist/database/types/migration.interface.d.ts:176: * Works for all databases with index support
+node_modules/@ductape/sdk/dist/database/types/migration.interface.d.ts:566:    databases?: ('postgresql' | 'mysql' | 'mariadb' | 'mongodb' | 'dynamodb' | 'cassandra')[];
+node_modules/@ductape/sdk/dist/database/types/query.interface.d.ts:158:    /** SQL query string (for SQL databases) or query object (for MongoDB) */
+node_modules/@ductape/sdk/dist/database/types/query.interface.d.ts:195:    /** SQL string (for SQL databases) */
+node_modules/@ductape/sdk/dist/database/types/trigger.interface.d.ts:5: * They integrate with Ductape primitives: storage, actions, notifications,
+node_modules/@ductape/sdk/dist/database/types/trigger.interface.d.ts:135:    /** Device tokens (for push notifications) */
+node_modules/@ductape/sdk/dist/database/types/trigger.interface.d.ts:143:    /** Title variables for push notifications */
+node_modules/@ductape/sdk/dist/database/types/trigger.interface.d.ts:145:    /** Additional data payload for push notifications */
+node_modules/@ductape/sdk/dist/features/feature-executor.d.ts:35:    private _sessionsService;
+node_modules/@ductape/sdk/dist/features/feature-executor.d.ts:98:    /** Lazy-initialized session service for ctx.sessions lifecycle steps. */
+node_modules/@ductape/sdk/dist/features/types/features.types.d.ts:277:    start<T = import('../../sessions').ISessionResult>(options: {
+node_modules/@ductape/sdk/dist/features/types/features.types.d.ts:282:    verify<T = import('../../sessions').IVerifyResult>(options: {
+node_modules/@ductape/sdk/dist/features/types/features.types.d.ts:287:    refresh<T = import('../../sessions').ISessionResult>(options: {
+node_modules/@ductape/sdk/dist/features/types/features.types.d.ts:297:    list<T = import('../../sessions').IListSessionsResult>(options: {
+node_modules/@ductape/sdk/dist/features/types/features.types.d.ts:541:    sessions: IFeatureSessionsContext;
+node_modules/@ductape/sdk/dist/graph/graphs.service.d.ts:5: * Provides a unified API for working with different graph databases
+node_modules/@ductape/sdk/dist/graph/types/enums.d.ts:50: * Transaction isolation levels for graph databases
+node_modules/@ductape/sdk/dist/index.d.ts:20:import { JobsService, JobStatus, IJobListOptions, ICancelOptions, IRetryOptions, IRescheduleOptions, IJobWebhookConfig } from './jobs';
+node_modules/@ductape/sdk/dist/index.d.ts:30: * @property {Array<IProductSession>} [sessions] - Product sessions.
+node_modules/@ductape/sdk/dist/index.d.ts:36: * @property {Array<IProductNotification>} [notifications] - Product notifications.
+node_modules/@ductape/sdk/dist/index.d.ts:37: * @property {Array<IProductDatabase>} [databases] - Product databases.
+node_modules/@ductape/sdk/dist/index.d.ts:38: * @property {Array<IProductJobs>} [jobs] - Product jobs.
+node_modules/@ductape/sdk/dist/index.d.ts:241:export { SessionsService, SessionError } from './sessions';
+node_modules/@ductape/sdk/dist/index.d.ts:242:export type { ISessionServiceConfig, ICreateSessionOptions, IRefreshSessionOptions, IVerifySessionOptions, IRevokeSessionOptions, IListSessionsOptions, IDefineSessionOptions, ISessionResult, IVerifyResult, IListSessionsResult, ISessionInfo, ISessionSchema, ISessionSchemaField, ISessionContext, IDefinedSession, } from './sessions';
+node_modules/@ductape/sdk/dist/index.d.ts:248:export { NotificationsService, notificationsService } from './notifications';
+node_modules/@ductape/sdk/dist/index.d.ts:249:export { NotificationChannelType, PushNotificationProvider, SmsProvider } from './notifications';
+node_modules/@ductape/sdk/dist/index.d.ts:250:export type { IFirebaseCredential, IPushNotificationHandler, IPushNotificationInput, IPushOptions, IEmailHandler, IEmailInput, IEmailOptions, ISmsHandler, ISmsInput, ISmsOptions, ICallbackHandler, ICallbackInput, ICallbackOptions, INotificationTemplate, INotificationEnvConfig, INotificationDefinition, INotificationsServiceConfig, INotificationResult, IMultiChannelNotificationResult, INotificationOptions, } from './notifications';
+node_modules/@ductape/sdk/dist/index.d.ts:265:export default class Ductape implements IDuctape {
+node_modules/@ductape/sdk/dist/index.d.ts:288:    private _jobsService;
+node_modules/@ductape/sdk/dist/index.d.ts:291:    private _sessionsService;
+node_modules/@ductape/sdk/dist/index.d.ts:310:    private jobsQueue;
+node_modules/@ductape/sdk/dist/index.d.ts:351:    jobsWorker: any;
+node_modules/@ductape/sdk/dist/index.d.ts:369:     * Schedules all healthcheck jobs for all products and environments.
+node_modules/@ductape/sdk/dist/index.d.ts:390:    /** Merge constructor product/env into call options (sessions, storage, cache, notifications, resilience, etc.). */
+node_modules/@ductape/sdk/dist/index.d.ts:531:     * Session-related operations for managing product sessions.
+node_modules/@ductape/sdk/dist/index.d.ts:533:    sessions: {
+node_modules/@ductape/sdk/dist/index.d.ts:550:         * Fetches all product sessions.
+node_modules/@ductape/sdk/dist/index.d.ts:552:         * @returns {IProductSession[]} The list of sessions.
+node_modules/@ductape/sdk/dist/index.d.ts:586:        }) => Promise<import("./sessions").ISessionResult>;
+node_modules/@ductape/sdk/dist/index.d.ts:597:        }) => Promise<import("./sessions").IVerifyResult>;
+node_modules/@ductape/sdk/dist/index.d.ts:608:        }) => Promise<import("./sessions").ISessionResult>;
+node_modules/@ductape/sdk/dist/index.d.ts:622:         * Lists active sessions with pagination.
+node_modules/@ductape/sdk/dist/index.d.ts:623:         * @param data - The list sessions payload.
+node_modules/@ductape/sdk/dist/index.d.ts:624:         * @returns The list of sessions with pagination info.
+node_modules/@ductape/sdk/dist/index.d.ts:633:        }) => Promise<import("./sessions").IListSessionsResult>;
+node_modules/@ductape/sdk/dist/index.d.ts:645:        }) => Promise<import("./sessions").IFetchSessionUsersResult>;
+node_modules/@ductape/sdk/dist/index.d.ts:649:         * @returns The user details with their sessions.
+node_modules/@ductape/sdk/dist/index.d.ts:656:        }) => Promise<import("./sessions").ISessionUserDetails>;
+node_modules/@ductape/sdk/dist/index.d.ts:666:        }) => Promise<import("./sessions").ISessionDashboardMetrics>;
+node_modules/@ductape/sdk/dist/index.d.ts:1344:         *   session: 'session-token-from-sessions.start()'
+node_modules/@ductape/sdk/dist/index.d.ts:1556:     * Notification-related operations for managing product notifications.
+node_modules/@ductape/sdk/dist/index.d.ts:1558:    notifications: {
+node_modules/@ductape/sdk/dist/index.d.ts:1567:         * Fetches all notifications for a product.
+node_modules/@ductape/sdk/dist/index.d.ts:1569:         * @returns {IProductNotification[]} The list of notifications.
+node_modules/@ductape/sdk/dist/index.d.ts:1630:         * await ductape.notifications.email.send({
+node_modules/@ductape/sdk/dist/index.d.ts:1638:            send: (options: import("./notifications").IEmailOptions) => Promise<{
+node_modules/@ductape/sdk/dist/index.d.ts:1650:         * await ductape.notifications.push.send({
+node_modules/@ductape/sdk/dist/index.d.ts:1658:            send: (options: import("./notifications").IPushOptions) => Promise<{
+node_modules/@ductape/sdk/dist/index.d.ts:1670:         * await ductape.notifications.sms.send({
+node_modules/@ductape/sdk/dist/index.d.ts:1678:            send: (options: import("./notifications").ISmsOptions) => Promise<{
+node_modules/@ductape/sdk/dist/index.d.ts:1690:         * await ductape.notifications.callback.send({
+node_modules/@ductape/sdk/dist/index.d.ts:1698:            send: (options: import("./notifications").ICallbackOptions) => Promise<{
+node_modules/@ductape/sdk/dist/index.d.ts:1706:            send: (options: import("./notifications").ISlackOptions) => Promise<{
+node_modules/@ductape/sdk/dist/index.d.ts:1714:            send: (options: import("./notifications").IDiscordOptions) => Promise<{
+node_modules/@ductape/sdk/dist/index.d.ts:1726:         * await ductape.notifications.send({
+node_modules/@ductape/sdk/dist/index.d.ts:1745:         * await ductape.notifications.dispatch({
+node_modules/@ductape/sdk/dist/index.d.ts:1748:         *   notification: 'user-notifications',
+node_modules/@ductape/sdk/dist/index.d.ts:1754:         * // Send recurring notifications
+node_modules/@ductape/sdk/dist/index.d.ts:1755:         * await ductape.notifications.dispatch({
+node_modules/@ductape/sdk/dist/index.d.ts:1770:         * @param {string} [options.notification_tag] - Notification event filter (e.g. rematch-notifications:order-placed).
+node_modules/@ductape/sdk/dist/index.d.ts:1779:         * const { items, total, hasMore } = await ductape.notifications.getMessages({
+node_modules/@ductape/sdk/dist/index.d.ts:1814:     * await ductape.databases.create({
+node_modules/@ductape/sdk/dist/index.d.ts:1823:     * await ductape.databases.connect({ env: 'dev', product: 'my-product', database: 'users-db' });
+node_modules/@ductape/sdk/dist/index.d.ts:1825:    databases: {
+node_modules/@ductape/sdk/dist/index.d.ts:1835:         * Fetch all databases for a product
+node_modules/@ductape/sdk/dist/index.d.ts:1930:             * await ductape.databases.schema.create('users', {
+node_modules/@ductape/sdk/dist/index.d.ts:1967:             * Add a constraint (SQL databases only)
+node_modules/@ductape/sdk/dist/index.d.ts:1971:             * Drop a constraint (SQL databases only)
+node_modules/@ductape/sdk/dist/index.d.ts:3009:     * databases, graphs, and vector stores with cross-database joins and
+node_modules/@ductape/sdk/dist/index.d.ts:3010:     * distributed transactions. All product databases, graphs, and vectors
+node_modules/@ductape/sdk/dist/index.d.ts:3187:     * Job-related operations for managing product jobs.
+node_modules/@ductape/sdk/dist/index.d.ts:3189:    jobs: {
+node_modules/@ductape/sdk/dist/index.d.ts:3198:         * Fetches all jobs for a product.
+node_modules/@ductape/sdk/dist/index.d.ts:3200:         * @returns {IProductJobs[]} The list of jobs.
+node_modules/@ductape/sdk/dist/index.d.ts:3230:         * const job = await ductape.jobs.get('job_abc123');
+node_modules/@ductape/sdk/dist/index.d.ts:3233:        get: (jobId: string) => Promise<import("./jobs").IJob>;
+node_modules/@ductape/sdk/dist/index.d.ts:3235:         * List jobs with filtering options
+node_modules/@ductape/sdk/dist/index.d.ts:3237:         * @returns Paginated list of jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3239:         * const { jobs, total } = await ductape.jobs.listJobs({
+node_modules/@ductape/sdk/dist/index.d.ts:3245:        listJobs: (options?: IJobListOptions) => Promise<import("./jobs").IJobListResult>;
+node_modules/@ductape/sdk/dist/index.d.ts:3252:         * await ductape.jobs.cancel('job_abc123', { reason: 'User requested' });
+node_modules/@ductape/sdk/dist/index.d.ts:3254:        cancel: (jobId: string, options?: ICancelOptions) => Promise<import("./jobs").IJob>;
+node_modules/@ductape/sdk/dist/index.d.ts:3256:         * Cancel multiple jobs matching a filter
+node_modules/@ductape/sdk/dist/index.d.ts:3257:         * @param filter - Filter to match jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3258:         * @returns Count of cancelled jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3271:         * await ductape.jobs.pause('job_abc123');
+node_modules/@ductape/sdk/dist/index.d.ts:3273:        pause: (jobId: string) => Promise<import("./jobs").IJob>;
+node_modules/@ductape/sdk/dist/index.d.ts:3275:         * Pause multiple jobs matching a filter
+node_modules/@ductape/sdk/dist/index.d.ts:3276:         * @param filter - Filter to match jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3277:         * @returns Count of paused jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3290:         * await ductape.jobs.resume('job_abc123');
+node_modules/@ductape/sdk/dist/index.d.ts:3292:        resume: (jobId: string) => Promise<import("./jobs").IJob>;
+node_modules/@ductape/sdk/dist/index.d.ts:3294:         * Resume multiple jobs matching a filter
+node_modules/@ductape/sdk/dist/index.d.ts:3295:         * @param filter - Filter to match jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3296:         * @returns Count of resumed jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3310:         * await ductape.jobs.retry('job_abc123', { delay: 5000 });
+node_modules/@ductape/sdk/dist/index.d.ts:3312:        retry: (jobId: string, options?: IRetryOptions) => Promise<import("./jobs").IJob>;
+node_modules/@ductape/sdk/dist/index.d.ts:3314:         * Retry multiple failed jobs matching a filter
+node_modules/@ductape/sdk/dist/index.d.ts:3315:         * @param filter - Filter to match jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3316:         * @returns Count of retried jobs
+node_modules/@ductape/sdk/dist/index.d.ts:3330:         * await ductape.jobs.reschedule('job_abc123', {
+node_modules/@ductape/sdk/dist/index.d.ts:3334:        reschedule: (jobId: string, options: IRescheduleOptions) => Promise<import("./jobs").IJob>;
+node_modules/@ductape/sdk/dist/index.d.ts:3341:         * const history = await ductape.jobs.getHistory('job_abc123');
+node_modules/@ductape/sdk/dist/index.d.ts:3346:        }) => Promise<import("./jobs").IJobHistory>;
+node_modules/@ductape/sdk/dist/index.d.ts:3352:         * const stats = await ductape.jobs.getStats({ product: 'my-product' });
+node_modules/@ductape/sdk/dist/index.d.ts:3360:        }) => Promise<import("./jobs").IJobStats>;
+node_modules/@ductape/sdk/dist/index.d.ts:3366:         * await ductape.jobs.setWebhook({
+node_modules/@ductape/sdk/dist/index.d.ts:3367:         *   url: 'https://api.example.com/webhooks/jobs',
+node_modules/@ductape/sdk/dist/index.d.ts:3395:     * await ductape.databases.create({
+node_modules/@ductape/sdk/dist/index.d.ts:4403:            databases: {
+node_modules/@ductape/sdk/dist/index.d.ts:4415:            databases: Array<{
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:7: * - Schedule jobs for deferred execution
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:8: * - Recurring jobs with cron or interval schedules
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:12: * - Webhook notifications for job events
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:17: * const job = await ductape.jobs.get('job_abc123');
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:19: * // List all scheduled jobs
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:20: * const { jobs } = await ductape.jobs.list({ status: 'scheduled' });
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:23: * await ductape.jobs.cancel('job_abc123');
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:25: * // Pause/Resume recurring jobs
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:26: * await ductape.jobs.pause('job_abc123');
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:27: * await ductape.jobs.resume('job_abc123');
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:30: * await ductape.jobs.retry('job_abc123', { delay: 5000 });
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:33: * const stats = await ductape.jobs.getStats({ product: 'my-app' });
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:36:export { JobsService } from './jobs.service';
+node_modules/@ductape/sdk/dist/jobs/index.d.ts:37:export { JobStateManager } from './jobs.state';
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:5:import { JobStateManager } from './jobs.state';
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:11:        jobs: any;
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:15: * JobsService manages the full lifecycle of background jobs
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:27:     * List jobs with optional filters
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:35:     * Cancel multiple jobs matching filter
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:48:     * Pause multiple jobs
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:61:     * Resume multiple paused jobs
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:78:     * Retry multiple failed jobs
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:91:     * Delete multiple jobs
+node_modules/@ductape/sdk/dist/jobs/jobs.service.d.ts:147:     * Calculate next run time for recurring jobs
+node_modules/@ductape/sdk/dist/jobs/jobs.state.d.ts:62:     * List jobs with filters
+node_modules/@ductape/sdk/dist/jobs/jobs.state.d.ts:107:     * Delete jobs matching filter
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:33: * Retry configuration for jobs
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:52: * Schedule configuration for jobs
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:57:    /** Cron expression for recurring jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:59:    /** Interval in milliseconds for recurring jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:61:    /** Maximum number of times to run (for recurring jobs) */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:177: * Options for listing jobs
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:203:    /** List of jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:204:    jobs: IJob[];
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:216:    /** Total jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:218:    /** Scheduled jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:220:    /** Queued jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:222:    /** Running jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:224:    /** Completed jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:226:    /** Failed jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:228:    /** Cancelled jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:230:    /** Paused jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:238:    /** Average retry count for completed jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:253:    /** Next run time for recurring jobs */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:318:    /** New cron expression (for recurring jobs) */
+node_modules/@ductape/sdk/dist/jobs/types.d.ts:320:    /** New interval (for recurring jobs) */
+node_modules/@ductape/sdk/dist/logs/logs.types.d.ts:66:    NOTIFICATIONS = "notifications",
+node_modules/@ductape/sdk/dist/logs/logs.types.d.ts:84:    JOB = "jobs",
+node_modules/@ductape/sdk/dist/notifications/index.d.ts:4: * A unified interface for sending notifications through multiple channels:
+node_modules/@ductape/sdk/dist/notifications/index.d.ts:5: * - Push notifications (Firebase, Expo)
+node_modules/@ductape/sdk/dist/notifications/index.d.ts:10: * @module notifications
+node_modules/@ductape/sdk/dist/notifications/index.d.ts:12:export { NotificationsService, notificationsService } from './notifications.service';
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:4: * Provides a unified interface for sending notifications through multiple channels:
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:5: * - Push notifications (Firebase, Expo)
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:13: * NotificationsService - Send notifications through push, email, SMS, and callbacks
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:17: * const notifications = new NotificationsService({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:26: * await notifications.push({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:38: * await notifications.email({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:119:     * const result = await notifications.push({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:141:     * const result = await notifications.email({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:165:     * const result = await notifications.sms({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:185:     * const result = await notifications.callback({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:204:     * Send notifications to multiple channels at once
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:211:     * const result = await notifications.send({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:241:     * const result = await notifications.dispatch({
+node_modules/@ductape/sdk/dist/notifications/notifications.service.d.ts:273:export declare function notificationsService(config: INotificationsServiceConfig & {
+node_modules/@ductape/sdk/dist/notifications/types/index.d.ts:4:export * from './notifications.types';
+node_modules/@ductape/sdk/dist/notifications/types/notifications.types.d.ts:4: * Defines interfaces for push notifications, email, SMS, and callback operations.
+node_modules/@ductape/sdk/dist/notifications/types/notifications.types.d.ts:319:    push_notifications?: IPushNotificationHandler;
+node_modules/@ductape/sdk/dist/notifications/types/notifications.types.d.ts:449: * Used by ductape.notifications.getMessages().
+node_modules/@ductape/sdk/dist/notifications/types/notifications.types.d.ts:486: * Response from ductape.notifications.getMessages().
+node_modules/@ductape/sdk/dist/products/services/products.service.d.ts:507:     * Decrypt notification env channel configs (push_notifications, emails, callbacks, sms).
+node_modules/@ductape/sdk/dist/resilience/healthcheck.service.d.ts:136:     * notifications, webhooks, and event emissions.
+node_modules/@ductape/sdk/dist/resilience/healthcheck.service.d.ts:158:     * Handles failure notifications for a healthcheck
+node_modules/@ductape/sdk/dist/resilience/types/index.d.ts:70: * Webhook configuration for failure notifications
+node_modules/@ductape/sdk/dist/resilience/types/index.d.ts:114:    notifications?: IHealthcheckNotification[];
+node_modules/@ductape/sdk/dist/resilience/types/index.d.ts:490:        jobs?: any;
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:5: * creating, refreshing, verifying, and revoking sessions.
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:11: * const sessions = new SessionsService({
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:20: * const result = await sessions.create({
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:28: * const verifyResult = await sessions.verify({
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:36: * const refreshResult = await sessions.refresh({
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:44:export { SessionsService, SessionError } from './sessions.service';
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:45:export { default as SessionsServiceDefault } from './sessions.service';
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:46:export { SESSION_PATTERN, SESSION_PATTERN_GLOBAL, parseSessionToken, isSessionReference, containsSessionReferences, extractSessionReferences, getNestedValue, verifySessionToken, extractSessionContext, mightContainSessions, findAllSessionReferences, createSessionsResolver, SessionResolutionError, clearSessionCache, getSessionCacheStats, } from './sessions.resolver';
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:47:export type { ISessionTokenParts, ISessionData, ISessionCheck, IResolveSessionOptions, ISessionResolutionResult, ISessionContext, } from './sessions.resolver';
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:48:export { verifyAndExtractSession, getSessionLogFields, resolveSessionReferences, processSessionForExecution, } from './sessions.helper';
+node_modules/@ductape/sdk/dist/sessions/index.d.ts:49:export type { ISessionVerificationResult, ISessionLogFields, } from './sessions.helper';
+node_modules/@ductape/sdk/dist/sessions/sessions.helper.d.ts:10:import { ISessionData, ISessionContext } from './sessions.resolver';
+node_modules/@ductape/sdk/dist/sessions/sessions.resolver.d.ts:26: * Clear all cached sessions (local and Redis)
+node_modules/@ductape/sdk/dist/sessions/sessions.resolver.d.ts:84: * Options for resolving sessions at runtime
+node_modules/@ductape/sdk/dist/sessions/sessions.resolver.d.ts:172: * Create a sessions resolver instance
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:5: * creating, refreshing, verifying, and revoking sessions.
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:26: * const sessions = new SessionsService({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:35: * const result = await sessions.create({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:43: * const verifyResult = await sessions.verify({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:51: * const refreshResult = await sessions.refresh({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:59: * await sessions.revoke({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:122:     * List active sessions
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:138:     * const users = await sessions.fetchUsers({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:153:     * const userDetails = await sessions.fetchUserDetails({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:167:     * const logs = await sessions.fetchActivityLogs({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:183:     * const dashboard = await sessions.fetchDashboard({
+node_modules/@ductape/sdk/dist/sessions/sessions.service.d.ts:196:     * const userDashboard = await sessions.fetchUserDashboard({
+node_modules/@ductape/sdk/dist/sessions/types/index.d.ts:65: * List sessions options
+node_modules/@ductape/sdk/dist/sessions/types/index.d.ts:107: * List sessions result
+node_modules/@ductape/sdk/dist/sessions/types/index.d.ts:110:    sessions: ISessionInfo[];
+node_modules/@ductape/sdk/dist/sessions/types/index.d.ts:146: * Session context for defining sessions
+node_modules/@ductape/sdk/dist/sessions/types/index.d.ts:213:    sessions: IUserSessionInfo[];
+node_modules/@ductape/sdk/dist/sessions/types/index.d.ts:299:        sessions: number;
+node_modules/@ductape/sdk/dist/storage/types/index.d.ts:206: * Storage dispatch options for background jobs
+node_modules/@ductape/sdk/dist/types/index.types.d.ts:46:        jobs: any;
+node_modules/@ductape/sdk/dist/types/inputs.types.d.ts:43:    type?: 'apps' | 'process' | 'feature' | 'integrations' | 'actions' | 'database' | 'database_actions' | 'caches' | 'notifications';
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:162: * @deprecated Use IEmailHandler from './notifications/types/notifications.types' instead
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:164: * For multi-provider support (SMTP, Mailgun, SendGrid, Postmark, Brevo), use the IEmailHandler from notifications.types.ts
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:169: * For new code, use IEmailHandler from './notifications/types/notifications.types'
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:250:    push_notifications?: INotificationsHandler;
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:330:    notifications: Array<IParsedSample>;
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:500: * Schedule options for dispatching operations as jobs
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:505:    /** Cron expression for recurring jobs (e.g., '0 0 * * *' for daily at midnight) */
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:507:    /** Interval in milliseconds for recurring jobs */
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:509:    /** Maximum number of times to run (for recurring jobs) */
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:582: * Dispatch input for notifications - schedules a notification to be sent as a job
+node_modules/@ductape/sdk/dist/types/processor.types.d.ts:632:    /** Next run time for recurring jobs */
+node_modules/@ductape/sdk/dist/types/productsBuilder.types.d.ts:42:    sessions: Array<IProductSession>;
+node_modules/@ductape/sdk/dist/types/productsBuilder.types.d.ts:43:    notifications: Array<IProductNotification>;
+node_modules/@ductape/sdk/dist/types/productsBuilder.types.d.ts:44:    databases: Array<IProductDatabase>;
+node_modules/@ductape/sdk/dist/types/productsBuilder.types.d.ts:45:    jobs: Array<IProductJobs>;
+node_modules/@ductape/sdk/dist/types/productsBuilder.types.d.ts:159:    notifications?: IHealthcheckNotification[];
+node_modules/@ductape/sdk/dist/vector/adapters/base.adapter.d.ts:30: * Abstract base adapter for vector databases
+node_modules/@ductape/sdk/dist/vector/index.d.ts:4: * Provides a unified interface for working with vector databases.
+node_modules/@ductape/sdk/dist/vector/types/connection.interface.d.ts:4: * Connection-related interfaces for vector databases.
+node_modules/@ductape/sdk/dist/vector/types/enums.d.ts:47: * Index types for vector databases
+node_modules/@ductape/sdk/dist/vector/vector.service.d.ts:54: * Provides a unified API for working with vector databases.
+node_modules/@ductape/sdk/dist/warehouse/executor/single-source-executor.d.ts:7:import { DatabaseService } from '../../database/databases.service';
+node_modules/@ductape/sdk/dist/warehouse/index.d.ts:5: * across traditional databases, graphs, and vector stores.
+node_modules/@ductape/sdk/dist/warehouse/registry/data-source-registry.d.ts:4: * Manages data sources across databases, graphs, and vector stores.
+node_modules/@ductape/sdk/dist/warehouse/registry/data-source-registry.d.ts:7:import { DatabaseService } from '../../database/databases.service';
+node_modules/@ductape/sdk/dist/warehouse/types/query.interface.d.ts:5: * traditional databases, graphs, and vector stores.
+node_modules/@ductape/sdk/dist/warehouse/types/query.interface.d.ts:75: * Supports querying across databases, graphs, and vector stores
+node_modules/@ductape/sdk/dist/warehouse/types/transaction.interface.d.ts:5: * for distributed consistency across databases, graphs, and vector stores.
+node_modules/@ductape/sdk/dist/warehouse/types/where.interface.d.ts:4: * A consistent filtering interface that works across databases,
+node_modules/@ductape/sdk/dist/warehouse/warehouse.service.d.ts:5: * databases, graphs, and vector stores using a single JSON interface.
+node_modules/@ductape/sdk/dist/warehouse/warehouse.service.d.ts:15:import { DatabaseService } from '../database/databases.service';
+node_modules/@ductape/sdk/dist/warehouse/warehouse.service.d.ts:52: * Orchestrates queries across databases, graphs, and vector stores.

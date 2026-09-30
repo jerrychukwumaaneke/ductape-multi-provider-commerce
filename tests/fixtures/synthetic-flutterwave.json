@@ -1,0 +1,53 @@
+{
+  "provider": "flutterwave",
+  "eventType": "charge.completed",
+  "headers": {
+    "content-type": "application/json",
+    "verif-hash": "test_hash"
+  },
+  "dedupeKey": "flutterwave_charge.completed_7891234",
+  "rawHostedLinkResponse": {
+    "status": "success",
+    "message": "Hosted Link",
+    "data": {
+      "link": "https://ravemodal-dev.herokuapp.com/v3/hosted/pay/4c4d3766ae4b8e808832"
+    }
+  },
+  "payload": {
+    "event": "charge.completed",
+    "data": {
+      "id": 7891234,
+      "tx_ref": "ref_flw_live_1727641234567",
+      "flw_ref": "FLW_MOCK_REF_987654321",
+      "device_fingerprint": "69e6b7f35b720379e6f53f3e1e13ad9b",
+      "amount": 3500,
+      "currency": "NGN",
+      "charged_amount": 3500,
+      "app_fee": 49,
+      "merchant_fee": 0,
+      "processor_response": "Approved",
+      "auth_model": "PIN",
+      "ip": "127.0.0.1",
+      "narration": "Payment for order ord_flw_live_1",
+      "status": "successful",
+      "payment_type": "card",
+      "created_at": "2026-09-29T20:30:15.000Z",
+      "account_id": 17389,
+      "card": {
+        "first_6digits": "553188",
+        "last_4digits": "2950",
+        "issuer": "MASTERCARD TEST",
+        "country": "NIGERIA NG",
+        "type": "MASTERCARD",
+        "expiry": "09/32"
+      },
+      "customer": {
+        "id": 654321,
+        "name": "Live Test Customer FLW",
+        "phone_number": null,
+        "email": "tester@example.com",
+        "created_at": "2026-09-29T20:29:00.000Z"
+      }
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "provider": "paystack",
+  "eventType": "charge.success",
+  "headers": {
+    "content-type": "application/json",
+    "x-paystack-signature": "4a71ef0841961e6878c772c67c0fa31bca542730623a9d20c5716df1629815049b8098ffbca377519ff7f2ba4d283e742a0fe0b9d997ef8b6a3ddffc6ffbc715"
+  },
+  "dedupeKey": "paystack_charge.success_302961",
+  "payload": {
+    "event": "charge.success",
+    "data": {
+      "id": 302961,
+      "domain": "test",
+      "status": "success",
+      "reference": "ref_paystack_live_1727641234567",
+      "amount": 250000,
+      "message": null,
+      "gateway_response": "Successful",
+      "paid_at": "2026-09-29T20:30:00.000Z",
+      "created_at": "2026-09-29T20:29:45.000Z",
+      "channel": "card",
+      "currency": "NGN",
+      "ip_address": "127.0.0.1",
+      "metadata": {
+        "order_id": "ord_paystack_live_1"
+      },
+      "log": {
+        "start_time": 1727641785,
+        "time_spent": 15,
+        "attempts": 1,
+        "errors": 0,
+        "success": true,
+        "mobile": false,
+        "input": [],
+        "history": [
+          {
+            "type": "action",
+            "message": "Attempted to pay",
+            "time": 7
+          },
+          {
+            "type": "success",
+            "message": "Successfully paid with test card",
+            "time": 15
+          }
+        ]
+      },
+      "authorization": {
+        "authorization_code": "AUTH_8675309live",
+        "bin": "408408",
+        "last4": "4081",
+        "exp_month": "12",
+        "exp_year": "2030",
+        "channel": "card",
+        "card_type": "visa ",
+        "bank": "TEST BANK",
+        "country_code": "NG",
+        "brand": "visa",
+        "reusable": true,
+        "signature": "SIG_live_fixture_test_card"
+      },
+      "customer": {
+        "id": 123456,
+        "first_name": "Test",
+        "last_name": "Customer",
+        "email": "tester@example.com",
+        "customer_code": "CUS_xyz123live",
+        "phone": null,
+        "metadata": null,
+        "risk_action": "default"
+      }
+    }
+  }
+}
