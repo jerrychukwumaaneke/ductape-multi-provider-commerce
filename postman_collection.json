@@ -60,6 +60,21 @@
       "key": "adminToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@commerce.io",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminApiKey",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -1189,7 +1204,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@commerce.io\",\n  \"password\": \"AdminPassword123!\"\n}"
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",

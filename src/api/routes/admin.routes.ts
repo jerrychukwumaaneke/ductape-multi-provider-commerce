@@ -1,9 +1,20 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { IdentityService } from '../../modules/identity/identity.service.js';
 import { IDatabaseClient } from '../../common/database/index.js';
 import { createAuthMiddleware, AuthenticatedRequest } from '../middleware/auth.js';
+import { UnauthorizedError } from '../../common/errors/app-error.js';
+
+function timingSafeMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 function readLastLines(filePath: string, maxLines: number = 50): string[] {
   if (!fs.existsSync(filePath)) return [];
@@ -31,14 +42,25 @@ export function createAdminRouter(identityService: IdentityService, db?: IDataba
   const router = Router();
   const auth = createAuthMiddleware(identityService);
 
-  // Flexible admin auth: accepts JWT Bearer with 'admin' role OR X-Admin-Key matching env var
+  // Hardened admin auth: accepts valid X-Admin-Key header (timing-safe, >= 32 chars) OR JWT with 'admin' role
   const requireAdminAccess = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const configuredKey = process.env.ADMIN_KEY || process.env.ADMIN_SECRET_KEY;
-    const providedKey = req.headers['x-admin-key'] || req.query.admin_key;
-    if (configuredKey && providedKey === configuredKey) {
-      return next();
+    const headerKey = req.headers['x-admin-key'];
+
+    // If an X-Admin-Key header is supplied, strictly validate it (no query parameter fallback)
+    if (headerKey) {
+      const providedKey = Array.isArray(headerKey) ? headerKey[0] : headerKey;
+      if (
+        configuredKey &&
+        configuredKey.length >= 32 &&
+        timingSafeMatch(providedKey, configuredKey)
+      ) {
+        return next();
+      }
+      return next(new UnauthorizedError('Invalid or unauthorized X-Admin-Key.'));
     }
-    // Fall back to JWT auth with admin role
+
+    // Otherwise, require standard JWT Bearer authentication with 'admin' role
     return auth.authenticate(req, res, () => {
       auth.requireRole('admin')(req, res, next);
     });

@@ -173,4 +173,73 @@ describe('Admin Logs API Integration', () => {
     expect(data.events[0].provider).toBe('flutterwave');
     expect(data.events[0].provider_event_id).toBe('flw_evt_101');
   });
+
+  it('authenticates via valid X-Admin-Key header (>=32 chars) and rejects query param', async () => {
+    const validKey = 'sec_admin_key_testing_production_grade_secret_32chars';
+    process.env.ADMIN_SECRET_KEY = validKey;
+
+    try {
+      // 1. Valid header -> 200
+      const okRes = await fetch(`${baseUrl}/admin/logs/stats`, {
+        headers: { 'X-Admin-Key': validKey },
+      });
+      expect(okRes.status).toBe(200);
+
+      // 2. Invalid header -> 401
+      const badRes = await fetch(`${baseUrl}/admin/logs/stats`, {
+        headers: { 'X-Admin-Key': 'wrong_key_that_fails_comparison' },
+      });
+      expect(badRes.status).toBe(401);
+
+      // 3. Query param alone is NOT accepted -> 401
+      const queryRes = await fetch(`${baseUrl}/admin/logs/stats?admin_key=${validKey}`);
+      expect(queryRes.status).toBe(401);
+    } finally {
+      delete process.env.ADMIN_SECRET_KEY;
+    }
+  });
+
+  it('seedDefaultUsers synchronizes admin password from ADMIN_PASSWORD env var', async () => {
+    const { seedDefaultUsers } = await import('../../src/db/seed-users.js');
+    process.env.ADMIN_PASSWORD = 'SuperSecureCustomAdminPassword2026!';
+
+    try {
+      await seedDefaultUsers(db);
+      const loginResult = await identityService.login({
+        email: 'admin@commerce.io',
+        password: 'SuperSecureCustomAdminPassword2026!',
+      });
+      expect(loginResult.accessToken).toBeDefined();
+    } finally {
+      delete process.env.ADMIN_PASSWORD;
+    }
+  });
+
+  it('seedDefaultUsers in production revokes leaked default AdminPassword123!', async () => {
+    const { seedDefaultUsers } = await import('../../src/db/seed-users.js');
+    const prevNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    try {
+      // First seed with default in dev
+      process.env.NODE_ENV = 'development';
+      await seedDefaultUsers(db);
+
+      // Now run seed in production without ADMIN_PASSWORD
+      process.env.NODE_ENV = 'production';
+      delete process.env.ADMIN_PASSWORD;
+      await seedDefaultUsers(db);
+
+      // Leaked password AdminPassword123! should now be rejected!
+      await expect(
+        identityService.login({
+          email: 'admin@commerce.io',
+          password: 'AdminPassword123!',
+        })
+      ).rejects.toThrow();
+    } finally {
+      process.env.NODE_ENV = prevNodeEnv;
+    }
+  });
 });
+
