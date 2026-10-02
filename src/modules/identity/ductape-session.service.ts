@@ -26,8 +26,8 @@ export class DuctapeSessionService {
     private readonly ductape: Ductape,
     config: DuctapeSessionConfig = {}
   ) {
-    this.product = config.product || process.env.DUCTAPE_PRODUCT || 'commerce-backend';
-    this.env = config.env || process.env.DUCTAPE_ENV || 'dev';
+    this.product = config.product || process.env.DUCTAPE_PRODUCT || 'xavier_space:commerce_backend';
+    this.env = config.env || process.env.DUCTAPE_ENV || 'snd';
     this.defaultTag = config.defaultTag || 'user-session';
   }
 

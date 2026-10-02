@@ -197,9 +197,7 @@ export class OrderService {
 
     StateMachine.validateOrderTransition(order.status, 'cancelled');
 
-    let cancelledOrder: Order;
-
-    await this.db.transaction(async (tx) => {
+    const cancelledOrder = await this.db.transaction<Order>(async (tx) => {
       if (order.status === 'paid') {
         // 1. Restock committed inventory: on_hand += qty, status = 'released' inside transaction
         await this.inventoryService.restockCommittedOrder(orderId, tx);
@@ -235,10 +233,10 @@ export class OrderService {
         "UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING id, customer_id, status, total_minor, currency, idempotency_key, created_at, updated_at",
         [orderId]
       );
-      cancelledOrder = res.rows[0];
+      return res.rows[0];
     });
 
-    cancelledOrder!.items = await this.getOrderItems(orderId);
+    cancelledOrder.items = await this.getOrderItems(orderId);
 
     if (this.auditService && actor && typeof actor === 'object' && actor.actorId && actor.actorType) {
       await this.auditService.record({

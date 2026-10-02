@@ -8,6 +8,7 @@ export interface QueryResult<T = unknown> {
 export interface IDatabaseClient {
   query<T = unknown>(text: string, params?: unknown[]): Promise<QueryResult<T>>;
   transaction<T>(callback: (client: IDatabaseClient) => Promise<T>): Promise<T>;
+  connect?(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -20,6 +21,11 @@ export class PostgresDatabaseClient implements IDatabaseClient {
     } else {
       this.pool = connectionStringOrPool;
     }
+  }
+
+  public async connect(): Promise<void> {
+    const client = await this.pool.connect();
+    client.release();
   }
 
   public async query<T = unknown>(text: string, params?: unknown[]): Promise<QueryResult<T>> {

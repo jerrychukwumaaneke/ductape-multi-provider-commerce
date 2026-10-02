@@ -143,3 +143,29 @@ export class RateLimitedError extends AppError {
     );
   }
 }
+
+export class ProviderApiError extends AppError {
+  public readonly provider: string;
+  public readonly isClientError: boolean;
+  public readonly rawResponse?: unknown;
+
+  constructor(
+    provider: string,
+    statusCode: number,
+    message: string,
+    rawResponse?: unknown
+  ) {
+    super(
+      statusCode,
+      'PROVIDER_ERROR',
+      `${provider} API error (${statusCode}): ${message}`,
+      rawResponse,
+      'Check provider API documentation, credentials, or parameters.'
+    );
+    this.name = 'ProviderApiError';
+    this.provider = provider;
+    this.isClientError = statusCode >= 400 && statusCode < 500;
+    this.rawResponse = rawResponse;
+  }
+}
+

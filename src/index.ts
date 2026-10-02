@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { PostgresDatabaseClient, DuctapeDatabaseClient } from './common/database/index.js';
+import { PostgresDatabaseClient, DuctapeDatabaseClient, IDatabaseClient } from './common/database/index.js';
+import { PaymentIntent } from './common/types/index.js';
 import { getDuctapeClient } from './common/ductape/index.js';
 import { DuctapeJobScheduler } from './common/ductape/jobs.js';
 import { IdentityService } from './modules/identity/identity.service.js';
@@ -18,6 +19,7 @@ import { MockTransport, HttpWebhookTransport, DuctapeNotificationTransport } fro
 import { IdempotencyService } from './modules/idempotency/idempotency.service.js';
 import { AuditService } from './modules/audit/audit.service.js';
 import { CheckoutSaga } from './modules/orders/checkout-saga.js';
+import { seedNotificationTemplates } from './modules/notifications/seed-templates.js';
 import { createApp } from './api/app.js';
 import { McpCommerceServer } from './mcp/server.js';
 
@@ -32,6 +34,14 @@ export async function bootstrap() {
   const db = process.env.USE_DUCTAPE_DB === 'true'
     ? new DuctapeDatabaseClient(ductape)
     : new PostgresDatabaseClient(connectionString);
+
+  // Ensure database client is connected and ready before any operations run
+  if (typeof db.connect === 'function') {
+    await db.connect();
+  }
+
+  // Seed default notification templates idempotently
+  await seedNotificationTemplates(db);
 
   const identityService = new IdentityService(db);
   const auditService = new AuditService(db);
@@ -113,7 +123,7 @@ export async function bootstrap() {
   const reconcilerIntervalMs = Number(process.env.RECONCILER_INTERVAL_MS) || 60000;
   const reconcilerTimer = setInterval(() => {
     paymentService
-      .reconcileStuckPaymentIntents(15, async (tx, intent) => {
+      .reconcileStuckPaymentIntents(15, 50, async (tx: IDatabaseClient, intent: PaymentIntent) => {
         await inventoryService.commitReservations(intent.order_id, tx);
       })
       .catch((err) => console.error('[Reconciler] Error running reconciliation job:', err));

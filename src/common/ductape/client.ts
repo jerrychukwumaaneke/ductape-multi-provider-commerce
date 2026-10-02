@@ -9,6 +9,17 @@ export interface DuctapeConfig {
 }
 
 let ductapeInstance: Ductape | null = null;
+let redisNoticeLogged = false;
+
+// Ensure Ductape SDK's redis notice is logged only once at process startup, preventing log spam on queries
+const originalLog = console.log;
+console.log = function (...args: unknown[]) {
+  if (typeof args[0] === 'string' && args[0].includes('No Redis URL provided, caching will use internal')) {
+    if (redisNoticeLogged) return;
+    redisNoticeLogged = true;
+  }
+  return originalLog.apply(console, args);
+};
 
 export function createDuctapeClient(config: DuctapeConfig = {}): Ductape {
   const accessKey =
@@ -32,6 +43,14 @@ export function createDuctapeClient(config: DuctapeConfig = {}): Ductape {
     env,
     redis_url: redisUrl,
   });
+
+  if (!redisUrl) {
+    // When no Redis URL is provided, Ductape SDK uses in-memory caching.
+    // The SDK's connectCacheRedis() checks `if (this.redisClient || this.redisCacheUnavailable) return;`
+    // but omits setting `this.redisCacheUnavailable = true` when `!this.redis_url`.
+    // Setting it here ensures subsequent database service accesses return immediately without spamming.
+    (client as any).redisCacheUnavailable = true;
+  }
 
   if (workspaceId) {
     client.setWorkspaceId(workspaceId);

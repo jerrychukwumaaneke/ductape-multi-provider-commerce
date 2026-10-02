@@ -12,6 +12,7 @@ export interface SendMessagePayload {
   subject?: string;
   body: string;
   secret?: string;
+  recipientId?: string;
 }
 
 export interface INotificationTransport {

@@ -42,7 +42,7 @@ export interface PaymentProvider {
   verifyPayment(reference: string): Promise<ProviderPayment>;
   cancelPayment(reference: string): Promise<void>;
   refund(reference: string, amountMinor?: number, currency?: string): Promise<ProviderRefund>;
-  getRefund?(refundId: string): Promise<ProviderRefund>;
+  getRefund?(refundId: string): Promise<ProviderRefund | null>;
   listRefunds?(referenceOrTransactionId?: string): Promise<ProviderRefund[]>;
   verifyWebhookSignature(rawBody: Buffer | string, headers: Record<string, string | string[] | undefined>): boolean;
   parseWebhookEvent(payload: unknown, rawBody?: Buffer | string): NormalizedEvent;

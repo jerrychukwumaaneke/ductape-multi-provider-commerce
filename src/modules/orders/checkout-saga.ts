@@ -49,7 +49,10 @@ export class CheckoutSaga {
       await this.paymentService.refundPayment(payload.intentId, payload.amountMinor, outboxId);
     });
     outbox.registerHandler('notification.send', async (payload) => {
-      await this.notificationService.send(payload);
+      const record = await this.notificationService.send(payload);
+      if (record.status === 'failed') {
+        throw new Error(`Notification delivery failed for notification ${record.id} (template: ${record.template_key})`);
+      }
     });
     outbox.registerHandler('notification.dead_letter', async (payload) => {
       await this.notificationService.recordDeadLetter(payload);

@@ -1,12 +1,13 @@
 import { IDatabaseClient } from '../../common/database/index.js';
 import { CryptoUtils } from '../../common/utils/crypto.js';
-import { NotFoundError, UnauthorizedError, ValidationError, PaymentFailedError, AppError } from '../../common/errors/app-error.js';
+import { NotFoundError, UnauthorizedError, ValidationError, PaymentFailedError, AppError, ProviderApiError } from '../../common/errors/app-error.js';
 import { StateMachine } from '../../common/state-machine/index.js';
 import { PaymentIntent, TransactionRecord, PaymentIntentStatus, Order } from '../../common/types/index.js';
 import { PaymentRouter } from './router.js';
 import { NormalizedEvent, PaymentProvider, ProviderPayment, ProviderRefund } from './types.js';
 import { OutboxService } from '../outbox/outbox.service.js';
 import { InventoryService } from '../inventory/inventory.service.js';
+import { sanitizeTransactionRawResponse } from './sanitize-response.js';
 
 export interface CreatePaymentIntentInput {
   orderId: string;
@@ -267,12 +268,20 @@ export class PaymentService {
         };
 
         if (!alreadyRecorded) {
+          const sanitizedRefund = sanitizeTransactionRawResponse(refundPayload, {
+            id: providerRefundId,
+            amount: refundAmount,
+            currency: intent.currency,
+            reference: intent.provider_ref ?? undefined,
+            status: 'succeeded',
+          });
+
           // Check if there is an in-flight 'pending' refund row for this intent
           const pendingRow = refundTxns.find((t) => t.status === 'pending');
           if (pendingRow) {
             await this.db.query(
               `UPDATE transactions SET status = 'succeeded', provider_ref = $1, amount_minor = $2, raw_response = $3 WHERE id = $4`,
-              [providerRefundId, refundAmount, JSON.stringify(refundPayload), pendingRow.id]
+              [providerRefundId, refundAmount, JSON.stringify(sanitizedRefund), pendingRow.id]
             );
           } else {
             // Allow multiple partial refunds while the sum stays <= the charge (Item 2)
@@ -290,7 +299,7 @@ export class PaymentService {
                   intent.id,
                   refundAmount,
                   providerRefundId,
-                  JSON.stringify(refundPayload),
+                  JSON.stringify(sanitizedRefund),
                 ]
               );
             }
@@ -453,6 +462,13 @@ export class PaymentService {
         );
 
         if (isDifferentPayment) {
+          const sanitizedCharge = sanitizeTransactionRawResponse(verifiedPayment.rawResponse, {
+            id: verifiedPayment.id,
+            reference: verifiedPayment.reference,
+            amount: verifiedPayment.amountMinor,
+            currency: verifiedPayment.currency,
+            status: verifiedPayment.status,
+          });
           const txnId = CryptoUtils.generateId('txn');
           await tx.query(
             `INSERT INTO transactions (id, payment_intent_id, type, amount_minor, status, provider_ref, raw_response, created_at)
@@ -463,7 +479,7 @@ export class PaymentService {
               verifiedPayment.amountMinor,
               verifiedPayment.status,
               verifiedPayment.reference,
-              JSON.stringify(verifiedPayment.rawResponse),
+              JSON.stringify(sanitizedCharge),
             ]
           );
 
@@ -526,6 +542,13 @@ export class PaymentService {
         (lockedIntent.status === 'failed' && !hasHeldStock && verifiedPayment.status === 'succeeded');
 
       if (isLateRefund) {
+        const sanitizedCharge = sanitizeTransactionRawResponse(verifiedPayment.rawResponse, {
+          id: verifiedPayment.id,
+          reference: verifiedPayment.reference,
+          amount: verifiedPayment.amountMinor,
+          currency: verifiedPayment.currency,
+          status: verifiedPayment.status,
+        });
         const txnId = CryptoUtils.generateId('txn');
         await tx.query(
           `INSERT INTO transactions (id, payment_intent_id, type, amount_minor, status, provider_ref, raw_response, created_at)
@@ -536,7 +559,7 @@ export class PaymentService {
             verifiedPayment.amountMinor,
             verifiedPayment.status,
             verifiedPayment.reference,
-            JSON.stringify(verifiedPayment.rawResponse),
+            JSON.stringify(sanitizedCharge),
           ]
         );
 
@@ -605,6 +628,13 @@ export class PaymentService {
           );
 
           // Record transaction
+          const sanitizedCharge = sanitizeTransactionRawResponse(verifiedPayment.rawResponse, {
+            id: verifiedPayment.id,
+            reference: verifiedPayment.reference,
+            amount: verifiedPayment.amountMinor,
+            currency: verifiedPayment.currency,
+            status: 'succeeded',
+          });
           const txnId = CryptoUtils.generateId('txn');
           await tx.query(
             `INSERT INTO transactions (id, payment_intent_id, type, amount_minor, status, provider_ref, raw_response, created_at)
@@ -614,7 +644,7 @@ export class PaymentService {
               intent.id,
               verifiedPayment.amountMinor,
               verifiedPayment.reference,
-              JSON.stringify(verifiedPayment.rawResponse),
+              JSON.stringify(sanitizedCharge),
             ]
           );
 
@@ -665,6 +695,13 @@ export class PaymentService {
             [intent.id]
           );
 
+          const sanitizedCharge = sanitizeTransactionRawResponse(verifiedPayment.rawResponse, {
+            id: verifiedPayment.id,
+            reference: verifiedPayment.reference,
+            amount: verifiedPayment.amountMinor,
+            currency: verifiedPayment.currency,
+            status: 'failed',
+          });
           const txnId = CryptoUtils.generateId('txn');
           await tx.query(
             `INSERT INTO transactions (id, payment_intent_id, type, amount_minor, status, provider_ref, raw_response, created_at)
@@ -674,7 +711,7 @@ export class PaymentService {
               intent.id,
               verifiedPayment.amountMinor,
               verifiedPayment.reference,
-              JSON.stringify(verifiedPayment.rawResponse),
+              JSON.stringify(sanitizedCharge),
             ]
           );
 
@@ -806,6 +843,13 @@ export class PaymentService {
         }
 
         if (providerRefund && (providerRefund.status === 'succeeded' || providerRefund.status === 'pending')) {
+          const sanitizedRefund = sanitizeTransactionRawResponse(providerRefund.rawResponse, {
+            id: providerRefund.id,
+            reference: providerRefund.reference,
+            amount: providerRefund.amountMinor,
+            currency: currency,
+            status: providerRefund.status,
+          });
           await this.db.query(
             `UPDATE transactions
              SET status = $1, provider_ref = $2, raw_response = $3
@@ -813,7 +857,7 @@ export class PaymentService {
             [
               providerRefund.status,
               providerRefund.id, // provider's refund id
-              JSON.stringify(providerRefund.rawResponse || {}),
+              JSON.stringify(sanitizedRefund),
               existingTxnForIdemp.id,
             ]
           );
@@ -824,6 +868,27 @@ export class PaymentService {
             status: providerRefund.status,
             rawResponse: providerRefund.rawResponse,
           };
+        }
+
+        if (providerRefund && providerRefund.status === 'failed') {
+          const sanitizedRefund = sanitizeTransactionRawResponse(providerRefund.rawResponse, {
+            id: providerRefund.id,
+            reference: providerRefund.reference,
+            amount: providerRefund.amountMinor,
+            currency: currency,
+            status: 'failed',
+          });
+          await this.db.query(
+            `UPDATE transactions
+             SET status = 'failed', provider_ref = $1, raw_response = $2
+             WHERE id = $3`,
+            [
+              providerRefund.id,
+              JSON.stringify(sanitizedRefund),
+              existingTxnForIdemp.id,
+            ]
+          );
+          throw new PaymentFailedError(`Provider refund failed: ${providerRefund.id}`);
         }
 
         // If a pending refund has no provider id and listRefunds finds no match (or provider lacks getRefund/listRefunds,
@@ -886,19 +951,58 @@ export class PaymentService {
           JSON.stringify({ stage: 'initiated', idempotencyKey, currency }),
         ]
       );
+    } else if (existingTxnForIdemp.status === 'failed') {
+      await this.db.query(
+        `UPDATE transactions
+         SET status = 'pending', provider_ref = NULL, raw_response = $1, created_at = NOW()
+         WHERE id = $2`,
+        [
+          JSON.stringify({ stage: 're-initiated', idempotencyKey, currency }),
+          existingTxnForIdemp.id,
+        ]
+      );
     }
 
     // 3. Call the provider to execute the refund (currency from intent)
-    const refundResult = await provider.refund(intent.provider_ref!, refundAmount, currency);
+    let refundResult: ProviderRefund;
+    try {
+      refundResult = await provider.refund(intent.provider_ref!, refundAmount, currency);
+    } catch (err: any) {
+      // Clean 4xx rejections from provider should mark transaction row 'failed' with real error immediately (Item 4)
+      const isClientError =
+        (err instanceof ProviderApiError && err.isClientError) ||
+        (typeof err?.statusCode === 'number' && err.statusCode >= 400 && err.statusCode < 500);
+
+      if (isClientError) {
+        const targetTxnId = existingTxnForIdemp?.id || txnId;
+        const errorMsg = err.message || 'Provider 4xx client rejection';
+        await this.db.query(
+          `UPDATE transactions
+           SET status = 'failed', raw_response = $1
+           WHERE id = $2`,
+          [
+            JSON.stringify({
+              error: errorMsg,
+              statusCode: err.statusCode,
+              providerResponse: err.rawResponse || null,
+              failedAt: new Date().toISOString(),
+              idempotencyKey,
+            }),
+            targetTxnId,
+          ]
+        );
+      }
+      throw err;
+    }
 
     // 4. Update the local 'pending' transaction to succeeded (storing provider's refund id in provider_ref)
-    const rawResponse = {
-      ...((typeof refundResult.rawResponse === 'object' && refundResult.rawResponse !== null
-        ? refundResult.rawResponse
-        : {}) as object),
-      idempotencyKey,
-      currency,
-    };
+    const sanitizedRefund = sanitizeTransactionRawResponse(refundResult.rawResponse, {
+      id: refundResult.id,
+      reference: refundResult.reference,
+      amount: refundResult.amountMinor,
+      currency: currency,
+      status: refundResult.status,
+    });
 
     await this.db.query(
       `UPDATE transactions
@@ -907,8 +1011,8 @@ export class PaymentService {
       [
         refundResult.status,
         refundResult.id, // Match and store on the provider's refund id! (Item 1 & 2)
-        JSON.stringify(rawResponse),
-        txnId,
+        JSON.stringify(sanitizedRefund),
+        existingTxnForIdemp?.id || txnId,
       ]
     );
 

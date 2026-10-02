@@ -11,7 +11,7 @@ import { PaystackPaymentProvider } from '../../src/modules/payments/providers/pa
 import { FlutterwavePaymentProvider } from '../../src/modules/payments/providers/flutterwave.provider.js';
 import { MockPaymentProvider } from '../../src/modules/payments/providers/mock.provider.js';
 import { NotificationService } from '../../src/modules/notifications/notifications.service.js';
-import { MockTransport, HttpWebhookTransport } from '../../src/modules/notifications/transports/index.js';
+import { MockTransport, HttpWebhookTransport, DuctapeNotificationTransport } from '../../src/modules/notifications/transports/index.js';
 import { IdempotencyService } from '../../src/modules/idempotency/idempotency.service.js';
 import { CheckoutSaga } from '../../src/modules/orders/checkout-saga.js';
 import { OutboxService } from '../../src/modules/outbox/outbox.service.js';
@@ -23,6 +23,7 @@ import { IdentityService } from '../../src/modules/identity/identity.service.js'
 import { createApp } from '../../src/api/app.js';
 import { CryptoUtils } from '../../src/common/utils/crypto.js';
 import { DuctapeJobScheduler } from '../../src/common/ductape/jobs.js';
+import { DuctapeSessionService } from '../../src/modules/identity/ductape-session.service.js';
 
 describe('Real Live Services Test Suite (Non-Mocked Network Calls)', () => {
   const ductapeAccessKey =
@@ -76,6 +77,7 @@ describe('Real Live Services Test Suite (Non-Mocked Network Calls)', () => {
   const createdWebhookEventIds = new Set<string>();
   const createdIdempotencyKeys = new Set<string>();
   const createdOutboxIds = new Set<string>();
+  const createdNotificationIds = new Set<string>();
 
   beforeAll(async () => {
     // Step 3 Guard: Refuse to execute if environment is not 'snd'
@@ -267,6 +269,12 @@ describe('Real Live Services Test Suite (Non-Mocked Network Calls)', () => {
       await dbClient.query('DELETE FROM orders WHERE id = ANY($1::varchar[])', [orderIds]);
     }
 
+    const explicitNotifIds = Array.from(createdNotificationIds);
+    if (explicitNotifIds.length > 0) {
+      await dbClient.query('DELETE FROM delivery_attempts WHERE notification_id = ANY($1::varchar[])', [explicitNotifIds]);
+      await dbClient.query('DELETE FROM notifications WHERE id = ANY($1::varchar[])', [explicitNotifIds]);
+    }
+
     // 4. Outbox rows tracked directly (Item 3)
     const outboxIds = Array.from(createdOutboxIds);
     if (outboxIds.length > 0) {
@@ -351,6 +359,13 @@ describe('Real Live Services Test Suite (Non-Mocked Network Calls)', () => {
         [idempKeys]
       );
       expect(Number(leftoverIdemp.rows[0].count)).toBe(0);
+    }
+    if (explicitNotifIds.length > 0) {
+      const leftoverExplicitNotifs = await dbClient.query<{ count: string }>(
+        'SELECT COUNT(*) as count FROM notifications WHERE id = ANY($1::varchar[])',
+        [explicitNotifIds]
+      );
+      expect(Number(leftoverExplicitNotifs.rows[0].count)).toBe(0);
     }
 
     console.log('[Live Tests Cleanup] Verified 0 leftover rows across all tables for all tracked IDs.');
@@ -2181,4 +2196,133 @@ describe('Real Live Services Test Suite (Non-Mocked Network Calls)', () => {
 
     await assertInventoryInvariants(Array.from(createdProductIds));
   }, 30000);
+
+  it('exercises ductape.sessions.start and ductape.sessions.verify against the real workspace', async () => {
+    const sessionTag = 'user-session';
+    const existing = await ductapeClient.sessions.list(ductapeProduct);
+    const found = existing.find((s: any) => s.tag === sessionTag);
+
+    if (!found) {
+      await ductapeClient.sessions.create(ductapeProduct, {
+        tag: sessionTag,
+        name: 'User Session',
+        description: 'Commerce backend user session',
+        expiry: 24,
+        period: 'hours' as any,
+        selector: '$Session{sub}',
+        schema: {
+          sub: 'usr_sample_123',
+          email: 'sample@example.com',
+          role: 'customer',
+          actorType: 'user',
+        },
+      });
+    }
+
+    const testUserId = `usr_live_test_${Date.now()}`;
+    const testEmail = `shopper_${Date.now()}@example.com`;
+
+    // 1. Test direct SDK ductape.sessions.start & verify
+    const sdkStarted = await ductapeClient.sessions.start({
+      product: ductapeProduct,
+      env: ductapeEnv,
+      tag: sessionTag,
+      data: {
+        sub: testUserId,
+        email: testEmail,
+        role: 'customer',
+        actorType: 'user',
+      },
+    });
+
+    expect(sdkStarted).toBeDefined();
+    expect(sdkStarted.token).toBeDefined();
+    expect(sdkStarted.token.startsWith('user-session:')).toBe(true);
+    expect(sdkStarted.sessionId).toBeDefined();
+
+    const sdkVerified = await ductapeClient.sessions.verify({
+      product: ductapeProduct,
+      env: ductapeEnv,
+      tag: sessionTag,
+      token: sdkStarted.token,
+    });
+
+    expect(sdkVerified).toBeDefined();
+    expect(sdkVerified.valid).toBe(true);
+    expect(sdkVerified.data).toBeDefined();
+    expect(sdkVerified.data.sub).toBe(testUserId);
+    expect(sdkVerified.data.email).toBe(testEmail);
+    expect(sdkVerified.data.role).toBe('customer');
+    expect(sdkVerified.sessionId).toBe(sdkStarted.sessionId);
+
+    // 2. Test DuctapeSessionService abstraction
+    const sessionService = new DuctapeSessionService(ductapeClient, {
+      product: ductapeProduct,
+      env: ductapeEnv,
+      defaultTag: sessionTag,
+    });
+
+    const svcSession = await sessionService.createSession(testUserId, {
+      role: 'customer',
+      email: testEmail,
+      actorType: 'user',
+    });
+
+    expect(svcSession.token).toBeDefined();
+    expect(svcSession.token.startsWith('user-session:')).toBe(true);
+
+    const verifiedPayload = await sessionService.verifySession(svcSession.token);
+    expect(verifiedPayload.sub).toBe(testUserId);
+    expect(verifiedPayload.email).toBe(testEmail);
+    expect(verifiedPayload.role).toBe('customer');
+
+    const actorContext = sessionService.toActorContext(verifiedPayload);
+    expect(actorContext.actorId).toBe(testUserId);
+    expect(actorContext.actorType).toBe('user');
+    expect(actorContext.role).toBe('customer');
+  }, 20000);
+
+  it('exercises DuctapeNotificationTransport against real workspace notification engine', async () => {
+    const ductapeTransport = new DuctapeNotificationTransport(ductapeClient, {
+      product: ductapeProduct,
+      env: ductapeEnv,
+      defaultNotificationTag: 'commerce:order-confirmed',
+    });
+
+    const liveNotificationService = new NotificationService(
+      dbClient,
+      ductapeTransport,
+      new HttpWebhookTransport(5000)
+    );
+
+    const testRecipient = `shopper_${Date.now()}@example.com`;
+    const testOrderId = `ord_live_notif_${Date.now()}`;
+
+    const sent = await liveNotificationService.send({
+      template_key: 'order_confirmed',
+      recipient: testRecipient,
+      vars: {
+        order_id: testOrderId,
+        customer_name: 'Live Shopper',
+        total: 'NGN 12,000.00',
+      },
+    });
+
+    createdNotificationIds.add(sent.id);
+
+    expect(sent).toBeDefined();
+    expect(sent.id).toBeDefined();
+    expect(sent.status).toBe('failed');
+    expect(sent.channel).toBe('email');
+
+    // Verify delivery attempts were recorded in live database with failure outcome
+    const attempts = await dbClient.query<{ id: string; outcome: string; attempt_no: number; error: string }>(
+      'SELECT id, outcome, attempt_no, error FROM delivery_attempts WHERE notification_id = $1 ORDER BY attempt_no ASC',
+      [sent.id]
+    );
+
+    expect(attempts.rowCount).toBeGreaterThan(0);
+    expect(attempts.rows[0].outcome).toMatch(/failure/);
+    expect(attempts.rows[0].error).toContain('ECONNREFUSED');
+  }, 45000);
 });

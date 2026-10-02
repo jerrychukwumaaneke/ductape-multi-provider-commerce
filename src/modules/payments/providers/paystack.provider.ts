@@ -1,41 +1,51 @@
 import { CryptoUtils } from '../../../common/utils/crypto.js';
+import { ProviderApiError } from '../../../common/errors/app-error.js';
+import { loggedFetch } from '../outbound-logger.js';
 import { CreatePaymentInput, NormalizedEvent, PaymentProvider, ProviderPayment, ProviderRefund } from '../types.js';
 
 export interface PaystackConfig {
   secretKey: string;
   baseUrl?: string;
+  fetchFn?: typeof fetch;
 }
 
 export class PaystackPaymentProvider implements PaymentProvider {
   public readonly name = 'paystack';
   private readonly secretKey: string;
   private readonly baseUrl: string;
+  private readonly fetchImpl: typeof fetch;
 
   constructor(config: PaystackConfig) {
     this.secretKey = config.secretKey;
     this.baseUrl = config.baseUrl || 'https://api.paystack.co';
+    this.fetchImpl = config.fetchFn || fetch;
   }
 
   public async createPayment(input: CreatePaymentInput): Promise<ProviderPayment> {
-    const res = await fetch(`${this.baseUrl}/transaction/initialize`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
-        'Content-Type': 'application/json',
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/transaction/initialize`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: input.email,
+          amount: input.amountMinor, // Paystack expects integer minor units (kobo, cents)
+          currency: input.currency.toUpperCase(),
+          reference: input.reference,
+          callback_url: input.callbackUrl,
+          metadata: input.metadata,
+        }),
       },
-      body: JSON.stringify({
-        email: input.email,
-        amount: input.amountMinor, // Paystack expects integer minor units (kobo, cents)
-        currency: input.currency.toUpperCase(),
-        reference: input.reference,
-        callback_url: input.callbackUrl,
-        metadata: input.metadata,
-      }),
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || !body.status) {
-      throw new Error(`Paystack initialization failed: ${body.message || res.statusText}`);
+    if (!res.ok || !body?.status) {
+      const errMsg = body?.message || res.statusText || 'Paystack initialization failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     return {
@@ -50,16 +60,21 @@ export class PaystackPaymentProvider implements PaymentProvider {
   }
 
   public async verifyPayment(reference: string): Promise<ProviderPayment> {
-    const res = await fetch(`${this.baseUrl}/transaction/verify/${encodeURIComponent(reference)}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
       },
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || !body.status) {
-      throw new Error(`Paystack verification failed: ${body.message || res.statusText}`);
+    if (!res.ok || !body?.status) {
+      const errMsg = body?.message || res.statusText || 'Paystack verification failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     const data = body.data;
@@ -81,26 +96,31 @@ export class PaystackPaymentProvider implements PaymentProvider {
   }
 
   public async refund(reference: string, amountMinor?: number): Promise<ProviderRefund> {
-    const res = await fetch(`${this.baseUrl}/refund`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
-        'Content-Type': 'application/json',
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/refund`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transaction: reference,
+          amount: amountMinor, // in minor units
+        }),
       },
-      body: JSON.stringify({
-        transaction: reference,
-        amount: amountMinor, // in minor units
-      }),
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || !body.status) {
-      throw new Error(`Paystack refund failed: ${body.message || res.statusText}`);
+    if (!res.ok || !body?.status) {
+      const errMsg = body?.message || res.statusText || 'Paystack refund failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     return {
       id: String(body.data.id),
-      reference,
+      reference: body.data.transaction_reference || reference,
       amountMinor: body.data.amount,
       status: body.data.status === 'processed' ? 'succeeded' : 'pending',
       rawResponse: body,
@@ -110,25 +130,34 @@ export class PaystackPaymentProvider implements PaymentProvider {
   /**
    * Fetch a single refund by refund ID.
    * Official Paystack API reference: https://paystack.com/docs/api/refund/#fetch
-   * [Unverified until a real refund is captured] Parsing is based on official Paystack documentation specifications.
    */
-  public async getRefund(refundId: string): Promise<ProviderRefund> {
-    const res = await fetch(`${this.baseUrl}/refund/${encodeURIComponent(refundId)}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
+  public async getRefund(refundId: string): Promise<ProviderRefund | null> {
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/refund/${encodeURIComponent(refundId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
       },
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || !body.status) {
-      throw new Error(`Paystack getRefund failed: ${body.message || res.statusText}`);
+    if (res.status === 404) {
+      return null;
+    }
+
+    if (!res.ok || !body?.status) {
+      const errMsg = body?.message || res.statusText || 'Paystack getRefund failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     const data = body.data;
+    if (!data) return null;
     return {
       id: String(data.id),
-      reference: data.transaction?.reference || String(data.transaction || ''),
+      reference: data.transaction_reference || data.transaction?.reference || String(data.transaction || ''),
       amountMinor: Number(data.amount),
       status: data.status === 'processed' ? 'succeeded' : data.status === 'failed' ? 'failed' : 'pending',
       rawResponse: body,
@@ -138,30 +167,34 @@ export class PaystackPaymentProvider implements PaymentProvider {
   /**
    * List refunds, optionally filtered by transaction reference.
    * Official Paystack API reference: https://paystack.com/docs/api/refund/#list
-   * [Unverified until a real refund is captured] Parsing is based on official Paystack documentation specifications.
    */
   public async listRefunds(reference?: string): Promise<ProviderRefund[]> {
     const url = new URL(`${this.baseUrl}/refund`);
     if (reference) {
-      url.searchParams.set('reference', reference);
+      url.searchParams.set('transaction_reference', reference);
     }
 
-    const res = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
+    const { res, body } = await loggedFetch(
+      this.name,
+      url.toString(),
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
       },
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || !body.status) {
-      throw new Error(`Paystack listRefunds failed: ${body.message || res.statusText}`);
+    if (!res.ok || !body?.status) {
+      const errMsg = body?.message || res.statusText || 'Paystack listRefunds failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     const list = Array.isArray(body.data) ? body.data : [];
     return list.map((item: any) => ({
       id: String(item.id),
-      reference: item.transaction?.reference || String(item.transaction || reference || ''),
+      reference: item.transaction_reference || item.transaction?.reference || String(item.transaction || reference || ''),
       amountMinor: Number(item.amount),
       status: item.status === 'processed' ? 'succeeded' : item.status === 'failed' ? 'failed' : 'pending',
       rawResponse: item,

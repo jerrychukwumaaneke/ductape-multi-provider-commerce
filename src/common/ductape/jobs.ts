@@ -12,20 +12,18 @@ export class DuctapeJobScheduler {
 
   public async registerReservationExpiryJob(): Promise<void> {
     const jobs = (this.ductape as any).jobs;
-    if (typeof jobs?.create === 'function') {
+    const product = process.env.DUCTAPE_PRODUCT || 'xavier_space:commerce_backend';
+
+    // Ductape's remote jobs (IProductJobs) are serverless cloud event dispatchers requiring a registered
+    // Ductape App and Event (JobEventTypes). They cannot execute in-process Node.js domain methods
+    // (like inventoryService.reapExpiredReservations()). In-process reservation expiry permanently uses
+    // the local scheduler.
+    if (typeof jobs?.list === 'function') {
       try {
-        await jobs.create({
-          tag: 'reservation-expiry-poller',
-          name: 'Reservation Expiry Worker',
-          description: 'Releases held inventory reservations whose TTL has expired',
-          schedule: {
-            cron: '*/1 * * * *', // Run every 1 minute
-          },
-        });
+        await jobs.list(product);
       } catch (err: any) {
-        // Log explicitly without swallowing silently
         console.warn(
-          `[DuctapeJobScheduler] Remote job registration unavailable (${err?.message || err}). Falling back to local scheduler.`
+          `[DuctapeJobScheduler] Remote job service check failed (${err?.message || err}). Falling back to local scheduler.`
         );
       }
     }

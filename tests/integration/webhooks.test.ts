@@ -14,7 +14,8 @@ import { IdempotencyService } from '../../src/modules/idempotency/idempotency.se
 import { AuditService } from '../../src/modules/audit/audit.service.js';
 import { CheckoutSaga } from '../../src/modules/orders/checkout-saga.js';
 import { CryptoUtils } from '../../src/common/utils/crypto.js';
-import { UnauthorizedError, ValidationError } from '../../src/common/errors/app-error.js';
+import fs from 'node:fs';
+import { UnauthorizedError, ValidationError, ProviderApiError } from '../../src/common/errors/app-error.js';
 
 describe('Milestone 10: Inbound Webhook Verification & Saga Flow', () => {
   let db: IDatabaseClient;
@@ -1631,5 +1632,90 @@ describe('Milestone 10: Inbound Webhook Verification & Saga Flow', () => {
 
       mockProvider.simulatedVerifyStatus = 'succeeded';
     });
+
+    it('clean 4xx rejections from provider mark transaction row failed immediately with real error text (Item 4)', async () => {
+      const product = await inventoryService.createProduct({
+        sku: 'CLEAN_4XX_PROD',
+        name: 'Clean 4xx Product',
+        price_minor: 5000,
+        currency: 'NGN',
+        initial_stock: 5,
+      }).then((r) => r.product);
+
+      const checkout = await checkoutSaga.executeCheckout({
+        customerId: 'cus_w1',
+        email: 'customer@example.com',
+        items: [{ productId: product.id, qty: 1 }],
+        idempotencyKey: 'idemp_clean_4xx_order',
+        provider: 'mock',
+      });
+
+      // Mark payment intent succeeded
+      await db.query("UPDATE payment_intents SET status = 'succeeded' WHERE id = $1", [checkout.paymentIntent.id]);
+
+      // Override mock provider refund to simulate a 400 rejection (e.g. from Paystack or Flutterwave)
+      const origRefund = mockProvider.refund.bind(mockProvider);
+      mockProvider.refund = async () => {
+        throw new ProviderApiError('paystack', 400, 'Transaction cannot be refunded: insufficient balance', {
+          status: false,
+          message: 'Transaction cannot be refunded: insufficient balance',
+        });
+      };
+
+      const refundIdempKey = 'refund_idemp_clean_4xx_fail';
+      let caughtErr: any;
+      try {
+        await paymentService.refundPayment(checkout.paymentIntent.id, 5000, refundIdempKey);
+      } catch (err) {
+        caughtErr = err;
+      }
+      expect(caughtErr).toBeDefined();
+      expect(caughtErr.statusCode).toBe(400);
+
+      // Verify the transaction row was marked 'failed' immediately (NOT pending, NOT manual_review_required)
+      const txnRows = await db.query<{ id: string; status: string; raw_response: any }>(
+        'SELECT id, status, raw_response FROM transactions WHERE payment_intent_id = $1 AND type = $2',
+        [checkout.paymentIntent.id, 'refund']
+      );
+
+      expect(txnRows.rowCount).toBe(1);
+      const refundTxn = txnRows.rows[0];
+      expect(refundTxn.status).toBe('failed');
+      expect(refundTxn.raw_response.statusCode).toBe(400);
+      expect(refundTxn.raw_response.error).toContain('insufficient balance');
+      expect(refundTxn.raw_response.manual_review_required).toBeUndefined();
+
+      mockProvider.refund = origRefund;
+    });
+
+    it('outbound provider calls are persistently logged to outbound-provider-calls.log (Item 2)', async () => {
+      const customFetch: typeof fetch = async (url, init) => {
+        return new Response(
+          JSON.stringify({
+            status: true,
+            message: 'Verification successful',
+            data: { id: 12345, status: 'success', amount: 5000, currency: 'NGN', reference: 'ref_log_test_123' },
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
+      };
+
+      const testProvider = new PaystackPaymentProvider({
+        secretKey: 'sk_test_logging_secret',
+        fetchFn: customFetch,
+      });
+
+      await testProvider.verifyPayment('ref_log_test_123');
+
+      expect(fs.existsSync('logs/outbound-provider-calls.log')).toBe(true);
+      const logContent = fs.readFileSync('logs/outbound-provider-calls.log', 'utf8');
+      expect(logContent).toContain('ref_log_test_123');
+      expect(logContent).toContain('"provider":"paystack"');
+      expect(logContent).toContain('"Authorization":"[REDACTED]"');
+    });
   });
 });
+

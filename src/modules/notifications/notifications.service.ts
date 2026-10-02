@@ -229,6 +229,7 @@ export class NotificationService {
         to: notification.recipient,
         subject: rendered.subject,
         body: rendered.body,
+        recipientId: (notification.vars?.order_id as string) || (notification.vars?.orderId as string) || notification.id,
       });
 
       if (res.success) {

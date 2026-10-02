@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import { CryptoUtils } from '../../../common/utils/crypto.js';
+import { ProviderApiError } from '../../../common/errors/app-error.js';
+import { loggedFetch } from '../outbound-logger.js';
 import { CreatePaymentInput, NormalizedEvent, PaymentProvider, ProviderPayment, ProviderRefund } from '../types.js';
 
 export interface FlutterwaveConfig {
@@ -24,30 +26,35 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
   }
 
   public async createPayment(input: CreatePaymentInput): Promise<ProviderPayment> {
-    const res = await this.fetchImpl(`${this.baseUrl}/payments`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
-        'Content-Type': 'application/json',
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/payments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tx_ref: input.reference,
+          amount: input.amountMinor / 100, // Flutterwave takes major units in API
+          currency: input.currency.toUpperCase(),
+          redirect_url: input.callbackUrl || 'https://example.com/checkout/callback',
+          customer: {
+            email: input.email,
+          },
+          meta: {
+            order_id: input.orderId,
+            ...input.metadata,
+          },
+        }),
       },
-      body: JSON.stringify({
-        tx_ref: input.reference,
-        amount: input.amountMinor / 100, // Flutterwave takes major units in API
-        currency: input.currency.toUpperCase(),
-        redirect_url: input.callbackUrl || 'https://example.com/checkout/callback',
-        customer: {
-          email: input.email,
-        },
-        meta: {
-          order_id: input.orderId,
-          ...input.metadata,
-        },
-      }),
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || body.status !== 'success') {
-      throw new Error(`Flutterwave initialization failed: ${body.message || res.statusText}`);
+    if (!res.ok || body?.status !== 'success') {
+      const errMsg = body?.message || res.statusText || 'Flutterwave initialization failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     return {
@@ -67,16 +74,21 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
       ? `${this.baseUrl}/transactions/${reference}/verify`
       : `${this.baseUrl}/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`;
 
-    const res = await this.fetchImpl(endpoint, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
+    const { res, body } = await loggedFetch(
+      this.name,
+      endpoint,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
       },
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || body.status !== 'success') {
-      throw new Error(`Flutterwave verification failed: ${body.message || res.statusText}`);
+    if (!res.ok || body?.status !== 'success') {
+      const errMsg = body?.message || res.statusText || 'Flutterwave verification failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     const data = body.data;
@@ -124,18 +136,23 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
       refundPayload.amount = resolvedAmountMinor / 100;
     }
 
-    const res = await this.fetchImpl(`${this.baseUrl}/transactions/${numericTxId}/refund`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
-        'Content-Type': 'application/json',
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/transactions/${numericTxId}/refund`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(refundPayload),
       },
-      body: JSON.stringify(refundPayload),
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || body.status !== 'success') {
-      throw new Error(`Flutterwave refund failed: ${body.message || res.statusText}`);
+    if (!res.ok || body?.status !== 'success') {
+      const errMsg = body?.message || res.statusText || 'Flutterwave refund failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     const data = body.data;
@@ -157,20 +174,30 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
    * Official Flutterwave API reference: https://developer.flutterwave.com/reference/endpoints/refunds/#get-a-refund
    * [Unverified until a real refund is captured] Parsing is based on official Flutterwave documentation specifications.
    */
-  public async getRefund(refundId: string): Promise<ProviderRefund> {
-    const res = await this.fetchImpl(`${this.baseUrl}/refunds/${encodeURIComponent(refundId)}`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
+  public async getRefund(refundId: string): Promise<ProviderRefund | null> {
+    const { res, body } = await loggedFetch(
+      this.name,
+      `${this.baseUrl}/refunds/${encodeURIComponent(refundId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
       },
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || body.status !== 'success') {
-      throw new Error(`Flutterwave getRefund failed: ${body.message || res.statusText}`);
+    if (res.status === 404) {
+      return null;
+    }
+
+    if (!res.ok || body?.status !== 'success') {
+      const errMsg = body?.message || res.statusText || 'Flutterwave getRefund failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     const data = body.data;
+    if (!data) return null;
     const amountMinor = Math.round(Number(data.amount_refunded || data.amount || 0) * 100);
     return {
       id: String(data.id),
@@ -197,16 +224,21 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
       endpoint += `?tx_ref=${encodeURIComponent(referenceOrTxId)}`;
     }
 
-    const res = await this.fetchImpl(endpoint, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${this.secretKey}`,
+    const { res, body } = await loggedFetch(
+      this.name,
+      endpoint,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${this.secretKey}`,
+        },
       },
-    });
+      this.fetchImpl
+    );
 
-    const body = (await res.json()) as any;
-    if (!res.ok || body.status !== 'success') {
-      throw new Error(`Flutterwave listRefunds failed: ${body.message || res.statusText}`);
+    if (!res.ok || body?.status !== 'success') {
+      const errMsg = body?.message || res.statusText || 'Flutterwave listRefunds failed';
+      throw new ProviderApiError(this.name, res.status, errMsg, body);
     }
 
     let list = Array.isArray(body.data) ? body.data : [];
