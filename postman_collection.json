@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "7f8b9a10-3c2e-4b5d-9e6f-8a0b1c2d3e4f",
     "name": "Ductape Multi-Provider Commerce API",
-    "description": "Comprehensive Postman collection for testing the agent-operable modular monolith commerce backend deployed on Render.",
+    "description": "Complete production Postman collection for testing all endpoints of the agent-operable modular monolith commerce backend deployed on Render.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -17,7 +17,12 @@
       "type": "string"
     },
     {
-      "key": "orderId",
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
       "value": "",
       "type": "string"
     },
@@ -27,7 +32,17 @@
       "type": "string"
     },
     {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "paymentIntentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
       "value": "",
       "type": "string"
     }
@@ -38,6 +53,21 @@
       "item": [
         {
           "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.status).to.eql('ok');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -62,11 +92,14 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const res = pm.response.json();",
-                  "if (res.user && res.user.id) {",
-                  "  pm.collectionVariables.set('userId', res.user.id);",
-                  "  pm.collectionVariables.set('customerId', res.user.customerId);",
-                  "}"
+                  "pm.test('Customer Registered', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const res = pm.response.json();",
+                  "  if (res.user && res.user.id) {",
+                  "    pm.collectionVariables.set('userId', res.user.id);",
+                  "    pm.collectionVariables.set('customerId', res.user.customerId);",
+                  "  }",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -82,7 +115,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"shopper_{{$timestamp}}@example.com\",\n  \"password\": \"Password123!\",\n  \"name\": \"Test Shopper\",\n  \"role\": \"customer\"\n}"
+              "raw": "{\n  \"email\": \"customer_{{$timestamp}}@example.com\",\n  \"password\": \"Password123!\",\n  \"name\": \"Jane Shopper\",\n  \"role\": \"customer\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
@@ -99,11 +132,16 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const res = pm.response.json();",
-                  "if (res.accessToken) {",
+                  "pm.test('Login Successful & Token Saved', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const res = pm.response.json();",
+                  "  pm.expect(res.accessToken).to.be.a('string');",
                   "  pm.collectionVariables.set('token', res.accessToken);",
-                  "  console.log('Saved token to collection variable: token');",
-                  "}"
+                  "  if (res.user) {",
+                  "    pm.collectionVariables.set('userId', res.user.id);",
+                  "    pm.collectionVariables.set('customerId', res.user.customerId);",
+                  "  }",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -131,6 +169,20 @@
         },
         {
           "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.accessToken) {",
+                  "  pm.collectionVariables.set('token', res.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -158,6 +210,23 @@
       "item": [
         {
           "name": "List Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Catalog Loaded', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const res = pm.response.json();",
+                  "  if (res.products && res.products.length > 0) {",
+                  "    pm.collectionVariables.set('productId', res.products[0].id);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -176,7 +245,7 @@
                 },
                 {
                   "key": "q",
-                  "value": "phone",
+                  "value": "item",
                   "disabled": true
                 }
               ]
@@ -198,7 +267,7 @@
           "response": []
         },
         {
-          "name": "Create Product (Admin Only)",
+          "name": "Create Product (Admin Role)",
           "request": {
             "method": "POST",
             "header": [
@@ -235,13 +304,16 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "const res = pm.response.json();",
-                  "if (res.order && res.order.id) {",
-                  "  pm.collectionVariables.set('orderId', res.order.id);",
-                  "}",
-                  "if (res.paymentIntent && res.paymentIntent.id) {",
-                  "  pm.collectionVariables.set('paymentIntentId', res.paymentIntent.id);",
-                  "}"
+                  "pm.test('Checkout Executed', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const res = pm.response.json();",
+                  "  if (res.order && res.order.id) {",
+                  "    pm.collectionVariables.set('orderId', res.order.id);",
+                  "  }",
+                  "  if (res.paymentIntent && res.paymentIntent.id) {",
+                  "    pm.collectionVariables.set('paymentIntentId', res.paymentIntent.id);",
+                  "  }",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
@@ -271,6 +343,39 @@
               "raw": "{{baseUrl}}/checkout",
               "host": ["{{baseUrl}}"],
               "path": ["checkout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders?limit=20&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "disabled": true
+                }
+              ]
             }
           },
           "response": []
@@ -322,14 +427,54 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Update Order Status (Admin Role)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{orderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "{{orderId}}", "status"]
+            }
+          },
+          "response": []
         }
       ]
     },
     {
-      "name": "Payments",
+      "name": "Payments & Transactions",
       "item": [
         {
           "name": "Create Payment Intent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) {",
+                  "  pm.collectionVariables.set('paymentIntentId', res.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -375,6 +520,74 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Cancel Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentIntentId}}/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentIntentId}}", "cancel"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refund Payment (Admin Role)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount_minor\": 2500000\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentIntentId}}/refund",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", "{{paymentIntentId}}", "refund"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Transactions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?payment_intent_id={{paymentIntentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions"],
+              "query": [
+                {
+                  "key": "payment_intent_id",
+                  "value": "{{paymentIntentId}}"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -383,6 +596,20 @@
       "item": [
         {
           "name": "Send Notification",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) {",
+                  "  pm.collectionVariables.set('notificationId', res.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -401,12 +628,48 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"template_key\": \"order_confirmed\",\n  \"recipient\": \"customer@commerce.io\",\n  \"vars\": {\n    \"customer_name\": \"Jerry Customer\",\n    \"order_id\": \"ord_sample_123\",\n    \"total\": \"NGN 25,000.00\"\n  }\n}"
+              "raw": "{\n  \"template_key\": \"order_confirmed\",\n  \"recipient\": \"customer@commerce.io\",\n  \"vars\": {\n    \"customer_name\": \"Jerry Customer\",\n    \"order_id\": \"{{orderId}}\",\n    \"total\": \"NGN 25,000.00\"\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/notifications",
               "host": ["{{baseUrl}}"],
               "path": ["notifications"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notification Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Replay Failed Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/replay",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "{{notificationId}}", "replay"]
             }
           },
           "response": []
@@ -425,6 +688,50 @@
               "raw": "{{baseUrl}}/notifications/templates/order_confirmed",
               "host": ["{{baseUrl}}"],
               "path": ["notifications", "templates", "order_confirmed"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notification Preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "{{userId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Notification Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"channel\": \"email\",\n  \"category\": \"optional\",\n  \"enabled\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/notifications/preferences/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["notifications", "preferences", "{{userId}}"]
             }
           },
           "response": []
