@@ -245,6 +245,17 @@ export async function runMigrations(db: IDatabaseClient): Promise<void> {
     }
   }
 
-  await db.query(sqlToRun);
+  // Ductape SDK postgresql adapter requires executing single statements to avoid array Result parsing bugs
+  const statements = sqlToRun
+    .split(';')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+  for (const stmt of statements) {
+    const lines = stmt.split('\n').filter((l) => !l.trim().startsWith('--') && l.trim().length > 0);
+    if (lines.length === 0) continue;
+    await db.query(stmt);
+  }
+
   console.log('[DatabaseMigrations] Schema migrations verified and applied successfully.');
 }
