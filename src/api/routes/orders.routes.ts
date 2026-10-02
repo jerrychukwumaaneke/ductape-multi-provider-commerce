@@ -62,12 +62,21 @@ export function createOrdersRouter(
 
       const wantsJson = req.headers.accept?.includes('application/json') || req.query.format === 'json';
 
+      const sendHtml = (statusCode: number, html: string) => {
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+        );
+        res.status(statusCode).send(html);
+      };
+
       if (!reference) {
         if (wantsJson) {
           res.status(200).json({ status: 'ok', message: 'Checkout callback receiver active.' });
           return;
         }
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: 'Checkout Callback',
@@ -90,7 +99,8 @@ export function createOrdersRouter(
           });
           return;
         }
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: 'Payment Incomplete',
@@ -114,7 +124,8 @@ export function createOrdersRouter(
           ? `${(result.order.total_minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${result.order.currency}`
           : undefined;
 
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: result.success ? 'Payment Successful!' : 'Payment Pending or Incomplete',
@@ -137,7 +148,8 @@ export function createOrdersRouter(
           return;
         }
 
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: 'Payment Received',

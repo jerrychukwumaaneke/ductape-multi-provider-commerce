@@ -6,7 +6,7 @@ import { CreatePaymentInput, NormalizedEvent, PaymentProvider, ProviderPayment, 
 
 export interface FlutterwaveConfig {
   secretKey: string;
-  secretHash: string; // configured webhook verification secret in Flutterwave dashboard
+  secretHash?: string; // configured webhook verification secret in Flutterwave dashboard
   baseUrl?: string;
   fetchFn?: typeof fetch;
 }
@@ -20,7 +20,7 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
 
   constructor(config: FlutterwaveConfig) {
     this.secretKey = config.secretKey;
-    this.secretHash = config.secretHash;
+    this.secretHash = config.secretHash || '';
     this.baseUrl = config.baseUrl || 'https://api.flutterwave.com/v3';
     this.fetchImpl = config.fetchFn || fetch;
   }
@@ -272,6 +272,7 @@ export class FlutterwavePaymentProvider implements PaymentProvider {
   ): boolean {
     const hash = headers['verif-hash'];
     if (!hash || typeof hash !== 'string') return false;
+    if (!this.secretHash) return false;
 
     const bufHash = Buffer.from(hash, 'utf8');
     const bufSecret = Buffer.from(this.secretHash, 'utf8');

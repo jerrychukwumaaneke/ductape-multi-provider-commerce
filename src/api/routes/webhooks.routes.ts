@@ -98,6 +98,14 @@ export function createWebhooksRouter(checkoutSaga: CheckoutSaga): Router {
 
       const wantsJson = req.headers.accept?.includes('application/json') || req.query.format === 'json';
 
+      const sendHtml = (statusCode: number, html: string) => {
+        res.setHeader(
+          'Content-Security-Policy',
+          "default-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+        );
+        res.status(statusCode).send(html);
+      };
+
       // If no reference was provided (e.g. direct visit to /webhooks/paystack)
       if (!reference) {
         if (wantsJson) {
@@ -108,7 +116,8 @@ export function createWebhooksRouter(checkoutSaga: CheckoutSaga): Router {
           });
           return;
         }
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider: provider || 'Gateway',
             title: 'Gateway Callback Receiver Active',
@@ -132,7 +141,8 @@ export function createWebhooksRouter(checkoutSaga: CheckoutSaga): Router {
           });
           return;
         }
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: 'Payment Incomplete',
@@ -157,7 +167,8 @@ export function createWebhooksRouter(checkoutSaga: CheckoutSaga): Router {
           ? `${(result.order.total_minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${result.order.currency}`
           : undefined;
 
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: result.success ? 'Payment Successful!' : 'Payment Pending or Incomplete',
@@ -182,7 +193,8 @@ export function createWebhooksRouter(checkoutSaga: CheckoutSaga): Router {
           return;
         }
 
-        res.status(200).send(
+        sendHtml(
+          200,
           renderCallbackStatusHtml({
             provider,
             title: 'Payment Received',

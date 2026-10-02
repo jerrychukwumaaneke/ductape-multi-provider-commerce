@@ -112,11 +112,11 @@ export async function bootstrap() {
   // Flutterwave
   const flwKey = secrets.flutterwaveSecretKey;
   const flwHash = secrets.flutterwaveSecretHash;
-  if (flwKey && flwHash) {
+  if (flwKey) {
     router.register(
       new FlutterwavePaymentProvider({
         secretKey: flwKey,
-        secretHash: flwHash,
+        secretHash: flwHash || '',
       })
     );
   }

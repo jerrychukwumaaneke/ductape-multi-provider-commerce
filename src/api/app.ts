@@ -96,6 +96,11 @@ export function createApp(deps: AppDependencies): Express {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
+  // Root endpoint redirect
+  app.get('/', (_req: Request, res: Response) => {
+    res.redirect('/products');
+  });
+
   // Mount API modules
   app.use('/auth', createAuthRouter(deps.identityService));
   app.use('/', createProductsRouter(deps.inventoryService, deps.identityService));

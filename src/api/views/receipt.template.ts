@@ -195,6 +195,14 @@ export function renderCallbackStatusHtml(params: CallbackViewParams): string {
     .btn-primary:hover {
       background: #1d4ed8;
     }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
     .footer-note {
       margin-top: 1.5rem;
       font-size: 0.8rem;
@@ -247,13 +255,35 @@ export function renderCallbackStatusHtml(params: CallbackViewParams): string {
     </div>
 
     <div class="actions">
-      <button class="btn btn-primary" onclick="if (window.opener) { window.close(); } else { window.location.href='/'; }">Done / Return</button>
+      <button id="done-btn" class="btn btn-primary" type="button">Done / Close Window</button>
+      <a href="/products" class="btn btn-secondary">Browse Store Catalog</a>
     </div>
 
     <div class="footer-note">
       Ductape Multi-Provider Commerce Engine
     </div>
   </div>
+
+  <script>
+    (function() {
+      var btn = document.getElementById('done-btn');
+      if (btn) {
+        btn.addEventListener('click', function() {
+          try {
+            if (window.opener && !window.opener.closed) {
+              window.close();
+            } else {
+              window.close();
+            }
+          } catch (e) {}
+
+          setTimeout(function() {
+            window.location.href = '/products';
+          }, 250);
+        });
+      }
+    })();
+  </script>
 </body>
 </html>`;
 }
