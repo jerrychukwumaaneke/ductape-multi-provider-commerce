@@ -337,7 +337,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"product_id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"currency\": \"NGN\",\n  \"provider\": \"paystack\",\n  \"callback_url\": \"https://ductape-multi-provider-commerce.onrender.com/webhooks/paystack\",\n  \"ttl_minutes\": 15\n}"
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"product_id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"currency\": \"NGN\",\n  \"provider\": \"paystack\",\n  \"callback_url\": \"https://ductape-multi-provider-commerce.onrender.com/webhooks/paystack\",\n  \"ttl_minutes\": 15\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/checkout",

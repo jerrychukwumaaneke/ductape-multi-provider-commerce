@@ -38,7 +38,12 @@ export class OrderService {
       throw new ValidationError('An order must contain at least one item');
     }
 
-    for (const item of input.items) {
+    const items = input.items.map((i: any) => ({
+      productId: i.productId || i.product_id,
+      qty: Number(i.qty),
+    }));
+
+    for (const item of items) {
       if (item.qty <= 0) {
         throw new ValidationError(`Quantity for product ${item.productId} must be greater than zero`);
       }
@@ -72,7 +77,7 @@ export class OrderService {
     let totalMinor = 0;
     const currency = input.currency?.toUpperCase() || 'NGN';
 
-    for (const item of input.items) {
+    for (const item of items) {
       const product = await this.inventoryService.getProduct(item.productId);
       if (!product.active) {
         throw new ValidationError(`Product ${product.name} (${product.sku}) is currently inactive`);
@@ -91,7 +96,7 @@ export class OrderService {
     // 3. Atomically reserve inventory
     // If any item fails, reserveStock rolls back all held reservations and throws InsufficientInventoryError
     await this.inventoryService.reserveStock(
-      input.items.map((i) => ({ productId: i.productId, qty: i.qty })),
+      items.map((i) => ({ productId: i.productId, qty: i.qty })),
       orderId,
       input.ttlMinutes ?? 15
     );
