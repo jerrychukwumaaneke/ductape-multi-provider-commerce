@@ -255,8 +255,10 @@ export function renderCallbackStatusHtml(params: CallbackViewParams): string {
     </div>
 
     <div class="actions">
-      <button id="done-btn" class="btn btn-primary" type="button">Done / Close Window</button>
-      <a href="/products" class="btn btn-secondary">Browse Store Catalog</a>
+      <button id="done-btn" class="btn btn-primary" type="button">Close Window</button>
+      <div id="close-msg" style="display: none; margin-top: 1rem; padding: 0.85rem 1rem; border-radius: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #10b981; font-size: 0.9rem; line-height: 1.4;">
+        ✓ Order confirmed and stock secured! You can safely close this browser tab.
+      </div>
     </div>
 
     <div class="footer-note">
@@ -267,19 +269,19 @@ export function renderCallbackStatusHtml(params: CallbackViewParams): string {
   <script>
     (function() {
       var btn = document.getElementById('done-btn');
+      var msg = document.getElementById('close-msg');
       if (btn) {
         btn.addEventListener('click', function() {
           try {
-            if (window.opener && !window.opener.closed) {
-              window.close();
-            } else {
-              window.close();
-            }
+            window.close();
           } catch (e) {}
 
-          setTimeout(function() {
-            window.location.href = '/products';
-          }, 250);
+          btn.textContent = '✓ Order Confirmed';
+          btn.style.background = '#10b981';
+          btn.style.cursor = 'default';
+          if (msg) {
+            msg.style.display = 'block';
+          }
         });
       }
     })();
