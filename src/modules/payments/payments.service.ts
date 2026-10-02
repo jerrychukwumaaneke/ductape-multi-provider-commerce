@@ -67,6 +67,10 @@ export class PaymentService {
     return this.inventoryService;
   }
 
+  public getPaymentRouter(): PaymentRouter {
+    return this.router;
+  }
+
   public async createPaymentIntent(input: CreatePaymentIntentInput): Promise<{
     paymentIntent: PaymentIntent;
     checkoutUrl?: string;
@@ -750,6 +754,122 @@ export class PaymentService {
         order,
       };
     });
+  }
+
+  public async verifyAndReconcilePayment(
+    reference: string,
+    providerName?: string,
+    onSuccessTx?: (tx: IDatabaseClient, intent: PaymentIntent, verifiedPayment: ProviderPayment) => Promise<void>
+  ): Promise<WebhookResult> {
+    // 1. Locate intent by provider_ref
+    let intent: PaymentIntent | null = null;
+    if (providerName) {
+      intent = await this.getPaymentIntentByReference(providerName, reference);
+    }
+    if (!intent) {
+      const res = await this.db.query<PaymentIntent>(
+        'SELECT * FROM payment_intents WHERE provider_ref = $1 LIMIT 1',
+        [reference]
+      );
+      if (res.rowCount > 0) {
+        intent = res.rows[0];
+      }
+    }
+
+    const resolvedProviderName = providerName || intent?.provider;
+    if (!resolvedProviderName) {
+      throw new NotFoundError('PaymentIntent', reference);
+    }
+
+    const provider = this.router.getProvider(resolvedProviderName);
+    if (!provider) {
+      throw new NotFoundError('PaymentProvider', resolvedProviderName);
+    }
+
+    // 2. If intent already succeeded, return immediately with current order state
+    if (intent && intent.status === 'succeeded') {
+      const ordRes = await this.db.query<Order>('SELECT * FROM orders WHERE id = $1', [intent.order_id]);
+      return {
+        duplicate: false,
+        event: {
+          provider: provider.name,
+          eventId: `return_${provider.name}_${reference}`,
+          type: 'charge.success',
+          reference,
+          amountMinor: intent.amount_minor,
+          currency: intent.currency,
+          rawPayload: {},
+        },
+        paymentIntent: intent,
+        order: ordRes.rows[0],
+        ignored: true,
+      };
+    }
+
+    // 3. Verify with provider API
+    const verified = await provider.verifyPayment(reference);
+
+    // If intent was not found by original reference, try with verified.reference
+    if (!intent && verified.reference) {
+      intent = await this.getPaymentIntentByReference(provider.name, verified.reference);
+      if (!intent) {
+        const res = await this.db.query<PaymentIntent>(
+          'SELECT * FROM payment_intents WHERE provider_ref = $1 LIMIT 1',
+          [verified.reference]
+        );
+        if (res.rowCount > 0) {
+          intent = res.rows[0];
+        }
+      }
+    }
+
+    if (!intent) {
+      throw new NotFoundError('PaymentIntent', reference);
+    }
+
+    // 4. Process transaction according to verified status
+    if (verified.status === 'succeeded') {
+      const returnEvent: NormalizedEvent = {
+        provider: provider.name,
+        eventId: `return_${provider.name}_${reference}`,
+        type: 'charge.success',
+        reference: verified.reference,
+        amountMinor: verified.amountMinor,
+        currency: verified.currency,
+        rawPayload: verified.rawResponse,
+      };
+      return await this.processWebhookTransaction(provider, returnEvent, verified, onSuccessTx);
+    } else if (verified.status === 'failed' || verified.status === 'canceled') {
+      const returnEvent: NormalizedEvent = {
+        provider: provider.name,
+        eventId: `return_${provider.name}_${reference}`,
+        type: 'charge.failed',
+        reference: verified.reference,
+        amountMinor: verified.amountMinor,
+        currency: verified.currency,
+        rawPayload: verified.rawResponse,
+      };
+      return await this.processWebhookTransaction(provider, returnEvent, verified, onSuccessTx);
+    } else {
+      // Pending
+      const ordRes = await this.db.query<Order>('SELECT * FROM orders WHERE id = $1', [intent.order_id]);
+      return {
+        duplicate: false,
+        event: {
+          provider: provider.name,
+          eventId: `return_${provider.name}_${reference}`,
+          type: 'unknown',
+          reference: verified.reference,
+          amountMinor: verified.amountMinor,
+          currency: verified.currency,
+          rawPayload: verified.rawResponse,
+        },
+        verifiedPayment: verified,
+        paymentIntent: intent,
+        order: ordRes.rows[0],
+        ignored: true,
+      };
+    }
   }
 
   public async refundPayment(

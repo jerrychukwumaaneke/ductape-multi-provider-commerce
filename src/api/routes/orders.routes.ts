@@ -1,4 +1,5 @@
-import { Router, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import { renderCallbackStatusHtml } from '../views/receipt.template.js';
 import { CheckoutSaga } from '../../modules/orders/checkout-saga.js';
 import { OrderService } from '../../modules/orders/orders.service.js';
 import { IdentityService } from '../../modules/identity/identity.service.js';
@@ -43,6 +44,109 @@ export function createOrdersRouter(
       );
 
       res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  router.get('/checkout/callback', async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const provider = (req.query.provider as string) || undefined;
+      const reference = (
+        req.query.reference ||
+        req.query.trxref ||
+        req.query.tx_ref ||
+        req.query.transaction_id ||
+        req.query.payment_intent
+      ) as string | undefined;
+
+      const wantsJson = req.headers.accept?.includes('application/json') || req.query.format === 'json';
+
+      if (!reference) {
+        if (wantsJson) {
+          res.status(200).json({ status: 'ok', message: 'Checkout callback receiver active.' });
+          return;
+        }
+        res.status(200).send(
+          renderCallbackStatusHtml({
+            provider,
+            title: 'Checkout Callback',
+            status: 'info',
+            message: 'Checkout callback receiver is operational.',
+          })
+        );
+        return;
+      }
+
+      const queryStatus = (req.query.status as string)?.toLowerCase();
+      if (queryStatus === 'cancelled' || queryStatus === 'failed') {
+        if (wantsJson) {
+          res.status(200).json({
+            success: false,
+            status: queryStatus,
+            provider,
+            reference,
+            message: `Payment was ${queryStatus}.`,
+          });
+          return;
+        }
+        res.status(200).send(
+          renderCallbackStatusHtml({
+            provider,
+            title: 'Payment Incomplete',
+            status: 'warning',
+            reference,
+            message: `Payment was ${queryStatus}. No charges were made.`,
+          })
+        );
+        return;
+      }
+
+      try {
+        const result = await checkoutSaga.handlePaymentReturn(reference, provider);
+
+        if (wantsJson) {
+          res.status(result.success ? 200 : 400).json(result);
+          return;
+        }
+
+        const amountFormatted = result.order?.total_minor
+          ? `${(result.order.total_minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${result.order.currency}`
+          : undefined;
+
+        res.status(200).send(
+          renderCallbackStatusHtml({
+            provider,
+            title: result.success ? 'Payment Successful!' : 'Payment Pending or Incomplete',
+            status: result.success ? 'success' : 'warning',
+            reference: result.reference,
+            orderId: result.orderId,
+            amountFormatted,
+            message: result.message,
+          })
+        );
+      } catch (reconErr: any) {
+        if (wantsJson) {
+          res.status(200).json({
+            success: true,
+            status: 'processing',
+            provider,
+            reference,
+            message: 'Payment return received. Final status will be reconciled via background provider webhook.',
+          });
+          return;
+        }
+
+        res.status(200).send(
+          renderCallbackStatusHtml({
+            provider,
+            title: 'Payment Received',
+            status: 'info',
+            reference,
+            message: 'Thank you! Your payment response was received. Order confirmation is being finalized.',
+          })
+        );
+      }
     } catch (err) {
       next(err);
     }

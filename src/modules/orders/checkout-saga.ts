@@ -161,4 +161,59 @@ export class CheckoutSaga {
 
     return webhookRes;
   }
+
+  public async handlePaymentReturn(
+    reference: string,
+    providerName?: string
+  ): Promise<{
+    success: boolean;
+    status: string;
+    orderId?: string;
+    reference: string;
+    order?: Order;
+    paymentIntent?: PaymentIntent;
+    message: string;
+  }> {
+    const result = await this.paymentService.verifyAndReconcilePayment(
+      reference,
+      providerName,
+      async (tx, intent) => {
+        await this.inventoryService.commitReservations(intent.order_id, tx);
+      }
+    );
+
+    const outbox = this.paymentService.getOutboxService();
+    await outbox.processPending().catch((err) => {
+      console.error('[CheckoutSaga] Error processing outbox events after payment return:', err);
+    });
+
+    if (this.auditService && result.order) {
+      const action = result.order.status === 'paid' ? 'order.paid' : `order.${result.order.status}`;
+      await this.auditService.record({
+        actorId: 'customer_return',
+        actorType: 'system',
+        action,
+        entity: 'order',
+        entityId: result.order.id,
+        after: { status: result.order.status },
+      }).catch((audErr) => {
+        console.error('[CheckoutSaga] Audit record error on return:', audErr);
+      });
+    }
+
+    const orderStatus = result.order?.status || result.paymentIntent?.status || 'processing';
+    const isPaid = orderStatus === 'paid' || result.paymentIntent?.status === 'succeeded';
+
+    return {
+      success: isPaid,
+      status: isPaid ? 'succeeded' : orderStatus,
+      orderId: result.order?.id || result.paymentIntent?.order_id,
+      reference,
+      order: result.order,
+      paymentIntent: result.paymentIntent,
+      message: isPaid
+        ? 'Payment successful and verified. Order confirmed!'
+        : `Payment status is ${orderStatus}.`,
+    };
+  }
 }

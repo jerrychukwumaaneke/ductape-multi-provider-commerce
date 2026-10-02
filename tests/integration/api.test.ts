@@ -289,4 +289,85 @@ describe('Milestone 9: REST API Front Door Integration', () => {
     expect(alpha.on_hand).toBe(10);
     expect(alpha.available).toBe(10);
   });
+
+  it('handles browser redirect via GET /webhooks/:provider, verifies payment, transitions order to paid, and renders HTML receipt', async () => {
+    const cust = await identityService.createCustomer({ email: 'redirect_cust@test.com', name: 'Redirect Customer' });
+    await identityService.registerUser({ email: 'redirect_cust@test.com', password: 'Password123!', role: 'customer', customerId: cust.id });
+    const token = (await identityService.login({ email: 'redirect_cust@test.com', password: 'Password123!' })).accessToken;
+
+    const prod = await inventoryService.createProduct({ sku: 'REDIRECT-1', name: 'Redirect Item', price_minor: 5000, currency: 'NGN', initial_stock: 10 });
+
+    // 1. Checkout
+    const checkoutRes = await fetch(`${baseUrl}/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Idempotency-Key': 'idemp_redirect_1' },
+      body: JSON.stringify({ items: [{ productId: prod.product.id, qty: 2 }], currency: 'NGN', provider: 'mock' }),
+    });
+    expect(checkoutRes.status).toBe(201);
+    const checkoutData = (await checkoutRes.json()) as any;
+    const orderId = checkoutData.order.id;
+    const ref = checkoutData.paymentIntent.provider_ref;
+
+    // Verify order is initially awaiting_payment and stock is reserved
+    const orderBefore = await orderService.getOrder(orderId);
+    expect(orderBefore.status).toBe('awaiting_payment');
+    const invBefore = (await db.query<{ reserved: number; on_hand: number }>('SELECT reserved, on_hand FROM inventory WHERE product_id = $1', [prod.product.id])).rows[0];
+    expect(invBefore?.reserved).toBe(2);
+    expect(invBefore?.on_hand).toBe(10);
+
+    // 2. Simulate browser redirect after successful payment (GET /webhooks/mock?reference=...)
+    const redirectRes = await fetch(`${baseUrl}/webhooks/mock?reference=${ref}&trxref=${ref}`, {
+      headers: { Accept: 'text/html' },
+    });
+    expect(redirectRes.status).toBe(200);
+    const html = await redirectRes.text();
+    expect(html).toContain('Payment Successful!');
+    expect(html).toContain(orderId);
+    expect(html).toContain(ref);
+
+    // 3. Confirm order is now paid and reservations committed
+    const orderAfter = await orderService.getOrder(orderId);
+    expect(orderAfter.status).toBe('paid');
+    const invAfter = (await db.query<{ reserved: number; on_hand: number }>('SELECT reserved, on_hand FROM inventory WHERE product_id = $1', [prod.product.id])).rows[0];
+    expect(invAfter?.reserved).toBe(0);
+    expect(invAfter?.on_hand).toBe(8);
+  });
+
+  it('supports GET /checkout/callback and format=json parameter', async () => {
+    const cust = await identityService.createCustomer({ email: 'callback_cust@test.com', name: 'Callback Customer' });
+    await identityService.registerUser({ email: 'callback_cust@test.com', password: 'Password123!', role: 'customer', customerId: cust.id });
+    const token = (await identityService.login({ email: 'callback_cust@test.com', password: 'Password123!' })).accessToken;
+
+    const prod = await inventoryService.createProduct({ sku: 'CALLBACK-1', name: 'Callback Item', price_minor: 3000, currency: 'NGN', initial_stock: 5 });
+
+    const checkoutRes = await fetch(`${baseUrl}/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'Idempotency-Key': 'idemp_callback_1' },
+      body: JSON.stringify({ items: [{ productId: prod.product.id, qty: 1 }], currency: 'NGN', provider: 'mock' }),
+    });
+    const checkoutData = (await checkoutRes.json()) as any;
+    const ref = checkoutData.paymentIntent.provider_ref;
+
+    // Call /checkout/callback?format=json
+    const res = await fetch(`${baseUrl}/checkout/callback?reference=${ref}&format=json`);
+    expect(res.status).toBe(200);
+    const data = (await res.json()) as any;
+    expect(data.success).toBe(true);
+    expect(data.status).toBe('succeeded');
+    expect(data.reference).toBe(ref);
+  });
+
+  it('renders clean operational status on GET /webhooks with no parameters', async () => {
+    const res = await fetch(`${baseUrl}/webhooks/mock`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('Receiver Active');
+  });
+
+  it('handles GET /webhooks/mock with cancelled status gracefully', async () => {
+    const res = await fetch(`${baseUrl}/webhooks/mock?status=cancelled&reference=dummy_ref`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('Payment Incomplete');
+  });
 });
