@@ -20,6 +20,7 @@ import { IdempotencyService } from './modules/idempotency/idempotency.service.js
 import { AuditService } from './modules/audit/audit.service.js';
 import { CheckoutSaga } from './modules/orders/checkout-saga.js';
 import { seedNotificationTemplates } from './modules/notifications/seed-templates.js';
+import { runMigrations } from './db/migrate.js';
 import { createApp } from './api/app.js';
 import { McpCommerceServer } from './mcp/server.js';
 
@@ -82,6 +83,9 @@ export async function bootstrap() {
       throw lastError;
     }
   }
+
+  // Ensure all schema tables exist before any queries or seeds run
+  await runMigrations(db);
 
   // Seed default notification templates idempotently
   await seedNotificationTemplates(db);
