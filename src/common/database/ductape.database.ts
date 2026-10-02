@@ -6,7 +6,7 @@ export class DuctapeDatabaseClient implements IDatabaseClient {
 
   constructor(
     private readonly ductape: Ductape,
-    private readonly config: { env?: string; product?: string; database?: string } = {}
+    private readonly config: { env?: string; product?: string; database?: string; connectionUrl?: string } = {}
   ) {}
 
   public async connect(maxRetries = 3, baseDelayMs = 1000): Promise<void> {
@@ -18,6 +18,11 @@ export class DuctapeDatabaseClient implements IDatabaseClient {
     const product = this.config.product || process.env.DUCTAPE_PRODUCT || 'xavier_space:commerce_backend';
     const database = this.config.database || 'commerce_db';
 
+    const connectOptions: Record<string, unknown> = {};
+    if (this.config.connectionUrl) {
+      connectOptions.connectionUrl = this.config.connectionUrl;
+    }
+
     const executeConnect = async () => {
       let lastErr: any;
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -26,6 +31,7 @@ export class DuctapeDatabaseClient implements IDatabaseClient {
             env,
             product,
             database,
+            ...(Object.keys(connectOptions).length > 0 ? { options: connectOptions } : {}),
           });
           return;
         } catch (err: any) {

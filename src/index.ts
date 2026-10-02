@@ -31,12 +31,23 @@ export async function bootstrap() {
 
   // Resolve Database Client (Ductape Databases or PostgreSQL connection pool)
   const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/commerce_db';
+  const remoteDbUrl = process.env.DATABASE_URL &&
+    !process.env.DATABASE_URL.includes('localhost') &&
+    !process.env.DATABASE_URL.includes('127.0.0.1')
+      ? process.env.DATABASE_URL
+      : undefined;
+
   const db = process.env.USE_DUCTAPE_DB === 'true'
-    ? new DuctapeDatabaseClient(ductape)
+    ? new DuctapeDatabaseClient(ductape, { connectionUrl: remoteDbUrl })
     : new PostgresDatabaseClient(connectionString);
 
   // Ensure database client is connected and ready before any operations run
   if (typeof db.connect === 'function') {
+    const targetDesc = remoteDbUrl
+      ? remoteDbUrl.replace(/:[^:@/]+@/, ':****@')
+      : 'Ductape Workspace Registered Secret ($Secret{DB_COMMERCE_BACKEND_COMMERCE_DB_SND_URL} -> localhost:5432)';
+    console.log(`[DatabaseBootstrap] Configured connection endpoint: ${targetDesc}`);
+
     const maxConnectAttempts = 5;
     const baseDelayMs = 1500;
     let connected = false;
