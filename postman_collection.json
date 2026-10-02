@@ -45,6 +45,16 @@
       "key": "notificationId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "paymentReference",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "checkoutUrl",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -73,8 +83,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/health",
-              "host": ["{{baseUrl}}"],
-              "path": ["health"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
             },
             "description": "Checks server health, uptime, and database connectivity readiness."
           },
@@ -119,8 +133,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "register"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
             }
           },
           "response": []
@@ -161,8 +180,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
             }
           },
           "response": []
@@ -197,8 +221,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth", "refresh"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
             }
           },
           "response": []
@@ -232,8 +261,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/products?limit=20&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ],
               "query": [
                 {
                   "key": "limit",
@@ -260,8 +293,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/products/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["products", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{productId}}"
+              ]
             }
           },
           "response": []
@@ -286,8 +324,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/products",
-              "host": ["{{baseUrl}}"],
-              "path": ["products"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
             }
           },
           "response": []
@@ -298,7 +340,7 @@
       "name": "Orders & Checkout",
       "item": [
         {
-          "name": "Execute Checkout",
+          "name": "Execute Checkout (Paystack)",
           "event": [
             {
               "listen": "test",
@@ -312,6 +354,13 @@
                   "  }",
                   "  if (res.paymentIntent && res.paymentIntent.id) {",
                   "    pm.collectionVariables.set('paymentIntentId', res.paymentIntent.id);",
+                  "  }",
+                  "  if (res.paymentIntent && res.paymentIntent.provider_ref) {",
+                  "    pm.collectionVariables.set('paymentReference', res.paymentIntent.provider_ref);",
+                  "  }",
+                  "  if (res.checkoutUrl) {",
+                  "    pm.collectionVariables.set('checkoutUrl', res.checkoutUrl);",
+                  "    console.log('Open this URL in your browser to complete payment:', res.checkoutUrl);",
                   "  }",
                   "});"
                 ],
@@ -337,12 +386,77 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"product_id\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"currency\": \"NGN\",\n  \"provider\": \"paystack\",\n  \"callback_url\": \"https://ductape-multi-provider-commerce.onrender.com/webhooks/paystack\",\n  \"ttl_minutes\": 15\n}"
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"currency\": \"NGN\",\n  \"provider\": \"paystack\",\n  \"callback_url\": \"{{baseUrl}}/webhooks/paystack\",\n  \"ttl_minutes\": 15\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/checkout",
-              "host": ["{{baseUrl}}"],
-              "path": ["checkout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Execute Checkout (Flutterwave)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Checkout Executed', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const res = pm.response.json();",
+                  "  if (res.order && res.order.id) {",
+                  "    pm.collectionVariables.set('orderId', res.order.id);",
+                  "  }",
+                  "  if (res.paymentIntent && res.paymentIntent.id) {",
+                  "    pm.collectionVariables.set('paymentIntentId', res.paymentIntent.id);",
+                  "  }",
+                  "  if (res.paymentIntent && res.paymentIntent.provider_ref) {",
+                  "    pm.collectionVariables.set('paymentReference', res.paymentIntent.provider_ref);",
+                  "  }",
+                  "  if (res.checkoutUrl) {",
+                  "    pm.collectionVariables.set('checkoutUrl', res.checkoutUrl);",
+                  "    console.log('Open this URL in your browser to complete payment:', res.checkoutUrl);",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"qty\": 1\n    }\n  ],\n  \"currency\": \"NGN\",\n  \"provider\": \"flutterwave\",\n  \"callback_url\": \"{{baseUrl}}/webhooks/flutterwave\",\n  \"ttl_minutes\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout"
+              ]
             }
           },
           "response": []
@@ -359,8 +473,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/orders?limit=20&offset=0",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ],
               "query": [
                 {
                   "key": "limit",
@@ -392,8 +510,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/orders/{{orderId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}"
+              ]
             }
           },
           "response": []
@@ -422,8 +545,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/orders/{{orderId}}/cancel",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}", "cancel"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "cancel"
+              ]
             }
           },
           "response": []
@@ -448,8 +577,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/orders/{{orderId}}/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["orders", "{{orderId}}", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
             }
           },
           "response": []
@@ -460,7 +595,7 @@
       "name": "Payments & Transactions",
       "item": [
         {
-          "name": "Create Payment Intent",
+          "name": "Create Payment Intent (Paystack)",
           "event": [
             {
               "listen": "test",
@@ -469,6 +604,12 @@
                   "const res = pm.response.json();",
                   "if (res.id) {",
                   "  pm.collectionVariables.set('paymentIntentId', res.id);",
+                  "}",
+                  "if (res.provider_ref) {",
+                  "  pm.collectionVariables.set('paymentReference', res.provider_ref);",
+                  "}",
+                  "if (res.checkoutUrl) {",
+                  "  pm.collectionVariables.set('checkoutUrl', res.checkoutUrl);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -493,12 +634,70 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"order_id\": \"{{orderId}}\",\n  \"amount_minor\": 2500000,\n  \"currency\": \"NGN\",\n  \"email\": \"customer@commerce.io\",\n  \"provider\": \"paystack\",\n  \"callback_url\": \"https://ductape-multi-provider-commerce.onrender.com/webhooks/paystack\"\n}"
+              "raw": "{\n  \"order_id\": \"{{orderId}}\",\n  \"amount_minor\": 2500000,\n  \"currency\": \"NGN\",\n  \"email\": \"customer@commerce.io\",\n  \"provider\": \"paystack\",\n  \"callback_url\": \"{{baseUrl}}/webhooks/paystack\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/payments",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Payment Intent (Flutterwave)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.id) {",
+                  "  pm.collectionVariables.set('paymentIntentId', res.id);",
+                  "}",
+                  "if (res.provider_ref) {",
+                  "  pm.collectionVariables.set('paymentReference', res.provider_ref);",
+                  "}",
+                  "if (res.checkoutUrl) {",
+                  "  pm.collectionVariables.set('checkoutUrl', res.checkoutUrl);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order_id\": \"{{orderId}}\",\n  \"amount_minor\": 2500000,\n  \"currency\": \"NGN\",\n  \"email\": \"customer@commerce.io\",\n  \"provider\": \"flutterwave\",\n  \"callback_url\": \"{{baseUrl}}/webhooks/flutterwave\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
             }
           },
           "response": []
@@ -515,8 +714,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/payments/{{paymentIntentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "{{paymentIntentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentIntentId}}"
+              ]
             }
           },
           "response": []
@@ -533,8 +737,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/payments/{{paymentIntentId}}/cancel",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "{{paymentIntentId}}", "cancel"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentIntentId}}",
+                "cancel"
+              ]
             }
           },
           "response": []
@@ -559,8 +769,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/payments/{{paymentIntentId}}/refund",
-              "host": ["{{baseUrl}}"],
-              "path": ["payments", "{{paymentIntentId}}", "refund"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentIntentId}}",
+                "refund"
+              ]
             }
           },
           "response": []
@@ -577,8 +793,12 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/transactions?payment_intent_id={{paymentIntentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["transactions"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transactions"
+              ],
               "query": [
                 {
                   "key": "payment_intent_id",
@@ -632,8 +852,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ]
             }
           },
           "response": []
@@ -650,8 +874,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/notifications/{{notificationId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "{{notificationId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}"
+              ]
             }
           },
           "response": []
@@ -668,8 +897,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/notifications/{{notificationId}}/replay",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "{{notificationId}}", "replay"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "replay"
+              ]
             }
           },
           "response": []
@@ -686,8 +921,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/notifications/templates/order_confirmed",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "templates", "order_confirmed"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "templates",
+                "order_confirmed"
+              ]
             }
           },
           "response": []
@@ -704,8 +945,14 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/notifications/preferences/{{userId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "preferences", "{{userId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "preferences",
+                "{{userId}}"
+              ]
             }
           },
           "response": []
@@ -730,8 +977,14 @@
             },
             "url": {
               "raw": "{{baseUrl}}/notifications/preferences/{{userId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["notifications", "preferences", "{{userId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "preferences",
+                "{{userId}}"
+              ]
             }
           },
           "response": []
@@ -739,7 +992,7 @@
       ]
     },
     {
-      "name": "Webhooks (Simulator)",
+      "name": "Webhooks & Browser Callbacks",
       "item": [
         {
           "name": "Paystack Webhook (charge.success)",
@@ -761,8 +1014,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/webhooks/paystack",
-              "host": ["{{baseUrl}}"],
-              "path": ["webhooks", "paystack"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "paystack"
+              ]
             }
           },
           "response": []
@@ -787,8 +1045,108 @@
             },
             "url": {
               "raw": "{{baseUrl}}/webhooks/flutterwave",
-              "host": ["{{baseUrl}}"],
-              "path": ["webhooks", "flutterwave"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "flutterwave"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Browser Return Callback (Paystack)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/paystack?reference={{paymentReference}}&trxref={{paymentReference}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "paystack"
+              ],
+              "query": [
+                {
+                  "key": "reference",
+                  "value": "{{paymentReference}}"
+                },
+                {
+                  "key": "trxref",
+                  "value": "{{paymentReference}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Browser Return Callback (Flutterwave)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/webhooks/flutterwave?status=successful&tx_ref={{paymentReference}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "webhooks",
+                "flutterwave"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "successful"
+                },
+                {
+                  "key": "tx_ref",
+                  "value": "{{paymentReference}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Universal Checkout Callback",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/html"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout/callback?reference={{paymentReference}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "reference",
+                  "value": "{{paymentReference}}"
+                }
+              ]
             }
           },
           "response": []
