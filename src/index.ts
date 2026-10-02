@@ -193,6 +193,7 @@ export async function bootstrap() {
     paymentService,
     notificationService,
     checkoutSaga,
+    db,
   });
 
   // MCP Server

@@ -15,6 +15,8 @@ import { createOrdersRouter } from './routes/orders.routes.js';
 import { createPaymentsRouter } from './routes/payments.routes.js';
 import { createWebhooksRouter } from './routes/webhooks.routes.js';
 import { createNotificationsRouter } from './routes/notifications.routes.js';
+import { createAdminRouter } from './routes/admin.routes.js';
+import { IDatabaseClient } from '../common/database/index.js';
 
 export interface AppDependencies {
   identityService: IdentityService;
@@ -23,6 +25,7 @@ export interface AppDependencies {
   paymentService: PaymentService;
   notificationService: NotificationService;
   checkoutSaga: CheckoutSaga;
+  db?: IDatabaseClient;
 }
 
 export function createApp(deps: AppDependencies): Express {
@@ -108,6 +111,7 @@ export function createApp(deps: AppDependencies): Express {
   app.use('/', createPaymentsRouter(deps.paymentService, deps.identityService));
   app.use('/webhooks', createWebhooksRouter(deps.checkoutSaga));
   app.use('/', createNotificationsRouter(deps.notificationService, deps.identityService));
+  app.use('/admin', createAdminRouter(deps.identityService, deps.db));
 
   // Catch-all 404 handler
   app.use((_req: Request, res: Response) => {

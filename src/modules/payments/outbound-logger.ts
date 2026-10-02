@@ -62,6 +62,12 @@ export function logOutboundProviderCall(entry: OutboundLogEntry): void {
     }
     const logFile = process.env.OUTBOUND_LOG_FILE || path.join(logDir, 'outbound-provider-calls.log');
     fs.appendFileSync(logFile, JSON.stringify(entry) + '\n', 'utf8');
+
+    // Also stream to stdout for cloud log viewers (e.g., Render, Docker, CloudWatch)
+    console.log(
+      `[OUTBOUND_PROVIDER] [${entry.provider}] [${entry.method} ${entry.url}] status=${entry.status ?? 'ERR'} duration=${entry.durationMs}ms`,
+      JSON.stringify(entry)
+    );
   } catch (err) {
     console.error('[Outbound Logger] Failed to log provider call:', err);
   }

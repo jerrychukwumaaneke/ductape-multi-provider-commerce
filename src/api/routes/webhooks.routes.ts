@@ -24,13 +24,17 @@ export function logIncomingWebhook(provider: string, headers: Record<string, unk
       fs.mkdirSync(logDir, { recursive: true });
     }
     const logFile = process.env.WEBHOOK_LOG_FILE || path.join(logDir, 'incoming-webhooks.log');
-    const logEntry = JSON.stringify({
+    const logEntryObj = {
       timestamp: new Date().toISOString(),
       provider,
       headers: redactSensitiveHeaders(headers),
       rawBody: typeof rawBody === 'string' ? rawBody : rawBody.toString('utf8'),
-    }) + '\n';
+    };
+    const logEntry = JSON.stringify(logEntryObj) + '\n';
     fs.appendFileSync(logFile, logEntry, 'utf8');
+
+    // Also stream to stdout for cloud log viewers (e.g., Render, Docker, CloudWatch)
+    console.log(`[INCOMING_WEBHOOK] [${provider}]`, JSON.stringify(logEntryObj));
   } catch (err) {
     console.error('[Webhook Logger] Failed to log incoming raw webhook:', err);
   }
