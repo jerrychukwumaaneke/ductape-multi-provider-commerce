@@ -21,6 +21,7 @@ import { AuditService } from './modules/audit/audit.service.js';
 import { CheckoutSaga } from './modules/orders/checkout-saga.js';
 import { seedNotificationTemplates } from './modules/notifications/seed-templates.js';
 import { seedProducts } from './db/seed-products.js';
+import { seedDefaultUsers } from './db/seed-users.js';
 import { runMigrations } from './db/migrate.js';
 import { createApp } from './api/app.js';
 import { McpCommerceServer } from './mcp/server.js';
@@ -93,6 +94,9 @@ export async function bootstrap() {
 
   // Seed default catalog products and inventory idempotently
   await seedProducts(db);
+
+  // Seed default customer & admin users idempotently
+  await seedDefaultUsers(db);
 
   const identityService = new IdentityService(db);
   const auditService = new AuditService(db);
