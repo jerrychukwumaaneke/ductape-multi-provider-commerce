@@ -28,7 +28,7 @@
     },
     {
       "key": "productId",
-      "value": "",
+      "value": "prod_live_1790713231955_kidx",
       "type": "string"
     },
     {
@@ -238,7 +238,7 @@
       "name": "Products",
       "item": [
         {
-          "name": "List Products",
+          "name": "List Products (All Catalog)",
           "event": [
             {
               "listen": "test",
@@ -287,7 +287,7 @@
           "response": []
         },
         {
-          "name": "Get Product by ID",
+          "name": "Get Product by ID (Single Item)",
           "request": {
             "method": "GET",
             "header": [],
