@@ -9,21 +9,48 @@ export class DuctapeDatabaseClient implements IDatabaseClient {
     private readonly config: { env?: string; product?: string; database?: string } = {}
   ) {}
 
-  public async connect(): Promise<void> {
-    if (!this.connectPromise) {
-      const env = this.config.env || process.env.DUCTAPE_ENV || 'snd';
-      const product = this.config.product || process.env.DUCTAPE_PRODUCT || 'xavier_space:commerce_backend';
-      const database = this.config.database || 'commerce_db';
-
-      this.connectPromise = this.ductape.databases.connect({
-        env,
-        product,
-        database,
-      }).then(() => undefined).catch((err) => {
-        this.connectPromise = undefined;
-        throw err;
-      });
+  public async connect(maxRetries = 3, baseDelayMs = 1000): Promise<void> {
+    if (this.connectPromise) {
+      return this.connectPromise;
     }
+
+    const env = this.config.env || process.env.DUCTAPE_ENV || 'snd';
+    const product = this.config.product || process.env.DUCTAPE_PRODUCT || 'xavier_space:commerce_backend';
+    const database = this.config.database || 'commerce_db';
+
+    const executeConnect = async () => {
+      let lastErr: any;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await this.ductape.databases.connect({
+            env,
+            product,
+            database,
+          });
+          return;
+        } catch (err: any) {
+          lastErr = err;
+          const isConnError =
+            err.message?.includes('ECONNREFUSED') ||
+            err.message?.includes('connect') ||
+            err.message?.includes('timeout') ||
+            err.code === 'ECONNREFUSED';
+          if (attempt < maxRetries && isConnError) {
+            const delay = baseDelayMs * attempt;
+            await new Promise((r) => setTimeout(r, delay));
+          } else {
+            throw err;
+          }
+        }
+      }
+      throw lastErr;
+    };
+
+    this.connectPromise = executeConnect().catch((err) => {
+      this.connectPromise = undefined;
+      throw err;
+    });
+
     return this.connectPromise;
   }
 

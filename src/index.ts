@@ -37,7 +37,39 @@ export async function bootstrap() {
 
   // Ensure database client is connected and ready before any operations run
   if (typeof db.connect === 'function') {
-    await db.connect();
+    const maxConnectAttempts = 5;
+    const baseDelayMs = 1500;
+    let connected = false;
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxConnectAttempts; attempt++) {
+      const startTime = Date.now();
+      console.log(`[DatabaseBootstrap] Attempting database connection (attempt ${attempt}/${maxConnectAttempts})...`);
+      try {
+        await db.connect();
+        const durationMs = Date.now() - startTime;
+        console.log(`[DatabaseBootstrap] Database connection established successfully in ${durationMs}ms.`);
+        connected = true;
+        break;
+      } catch (err: any) {
+        lastError = err;
+        const durationMs = Date.now() - startTime;
+        const isInstant = durationMs < 500;
+        console.error(
+          `[DatabaseBootstrap] Connection attempt ${attempt}/${maxConnectAttempts} failed after ${durationMs}ms (${isInstant ? 'instant refusal' : 'timeout/slow failure'}): ${err.message || String(err)}`
+        );
+        if (attempt < maxConnectAttempts) {
+          const delay = baseDelayMs * attempt;
+          console.log(`[DatabaseBootstrap] Retrying database connection in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    if (!connected) {
+      console.error(`[DatabaseBootstrap] All ${maxConnectAttempts} database connection attempts failed.`);
+      throw lastError;
+    }
   }
 
   // Seed default notification templates idempotently
