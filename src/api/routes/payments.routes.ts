@@ -18,19 +18,25 @@ export function createPaymentsRouter(
         throw new ValidationError('Idempotency-Key header is required');
       }
 
-      const { order_id, amount_minor, currency, email, provider, callback_url } = req.body;
-      if (!order_id || amount_minor === undefined || !currency) {
+      const orderId = req.body.order_id || req.body.orderId;
+      const amountMinor = req.body.amount_minor !== undefined ? req.body.amount_minor : req.body.amountMinor;
+      const currency = req.body.currency;
+      const email = req.body.email;
+      const provider = req.body.provider;
+      const callbackUrl = req.body.callback_url || req.body.callbackUrl;
+
+      if (!orderId || amountMinor === undefined || !currency) {
         throw new ValidationError('order_id, amount_minor, and currency are required');
       }
 
       const intent = await paymentService.createPaymentIntent({
-        orderId: order_id,
-        amountMinor: Number(amount_minor),
+        orderId,
+        amountMinor: Number(amountMinor),
         currency,
         email: email || 'payer@example.com',
         idempotencyKey,
         provider,
-        callbackUrl: callback_url,
+        callbackUrl,
       });
 
       res.status(201).json(intent);
