@@ -237,7 +237,19 @@ describe('Admin Logs API Integration', () => {
           password: 'AdminPassword123!',
         })
       ).rejects.toThrow();
+
+      // Recovery path: Setting ADMIN_PASSWORD on next startup restores full admin access
+      process.env.ADMIN_PASSWORD = 'RecoveredAdminPassword2026!';
+      await seedDefaultUsers(db);
+
+      const recoveredLogin = await identityService.login({
+        email: 'admin@commerce.io',
+        password: 'RecoveredAdminPassword2026!',
+      });
+      expect(recoveredLogin.accessToken).toBeDefined();
+      expect(recoveredLogin.user.role).toBe('admin');
     } finally {
+      delete process.env.ADMIN_PASSWORD;
       process.env.NODE_ENV = prevNodeEnv;
     }
   });
